@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cashplus-finance-v6';
+const CACHE_NAME = 'cashplus-finance-v7';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

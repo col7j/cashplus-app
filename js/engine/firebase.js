@@ -41,7 +41,12 @@ const FIREBASE_CONFIG = {
 // ─── Initialize Firebase ─────────────────────────────────────────────────────
 const firebaseApp  = initializeApp(FIREBASE_CONFIG);
 const auth         = getAuth(firebaseApp);
-const firestore    = getFirestore(firebaseApp);
+let firestore;
+try {
+  firestore = getFirestore(firebaseApp, 'default');
+} catch (e) {
+  firestore = getFirestore(firebaseApp);
+}
 const googleProvider = new GoogleAuthProvider();
 
 googleProvider.setCustomParameters({ prompt: 'select_account', hl: 'ar' });
