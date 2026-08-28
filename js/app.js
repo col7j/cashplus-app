@@ -561,7 +561,7 @@ class App {
     if (!modalBackdrop || !modalContent) return;
 
     modalContent.innerHTML = `
-      <div class="modal-sheet animate-fade-in">
+      <div class="modal-sheet animate-fade-in" style="max-width: 520px;">
         <div class="modal-header">
           <div style="display: flex; align-items: center; gap: var(--space-xs);">
             <span style="font-size: 1.25rem;">📱</span>
@@ -576,11 +576,11 @@ class App {
           </p>
 
           <div class="form-group">
-            <textarea id="sms-raw-input" class="form-textarea" placeholder="مثال: شراء عبر نقاط البيع بطاقة:2825 فيزا-ابل باي لدى:MATHNA CA مبلغ:85 SAR رصيد:11,790 SAR..." style="min-height: 100px;"></textarea>
+            <textarea id="sms-raw-input" class="form-textarea" placeholder="مثال: شراء نقاط البيع بطاقة:0932 لدى tamwinat alhajrih بمبلغ 0.25 ريال سعودي..." style="min-height: 100px; font-size: 0.875rem;"></textarea>
           </div>
 
           <div style="display: flex; justify-content: flex-end; margin-bottom: var(--space-md);">
-            <button class="btn btn-glass btn-sm" id="btn-parse-sms">
+            <button class="btn btn-glass btn-sm" id="btn-parse-sms" style="font-weight: 700;">
               ⚡ تحليل الرسالة الآن
             </button>
           </div>
@@ -590,7 +590,7 @@ class App {
 
         <div class="modal-footer">
           <button class="btn btn-subtle" id="modal-cancel-btn">إلغاء</button>
-          <button class="btn btn-emerald" id="btn-save-parsed-txn" disabled>
+          <button class="btn btn-primary" id="btn-save-parsed-txn" disabled style="padding: 0.65rem 1.5rem; font-weight: 800;">
             ${Icons.check}
             تأكيد وتسجيل العملية
           </button>
@@ -615,7 +615,10 @@ class App {
       resContainer.innerHTML = `
         <div style="background: var(--bg-surface-secondary); padding: var(--space-md); border-radius: var(--radius-md); border: 1px solid var(--border-default); display: flex; flex-direction: column; gap: var(--space-sm);">
           
-          <div style="font-size: 0.8125rem; font-weight: 700; color: var(--primary);">✅ البيانات المستخرجة:</div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="font-size: 0.8125rem; font-weight: 800; color: var(--primary);">✅ البيانات المستخرجة بدقة:</div>
+            ${parsedData.paymentMethod ? `<span class="badge badge-neutral" style="font-size:0.7rem;">${parsedData.paymentMethod}</span>` : ''}
+          </div>
 
           <div class="form-row">
             <div>
@@ -628,13 +631,13 @@ class App {
             </div>
             <div>
               <label class="form-label">المبلغ المستخرج:</label>
-              <input type="number" id="parsed-amount" class="form-input" value="${parsedData.amount || ''}" step="any">
+              <input type="number" id="parsed-amount" class="form-input" value="${parsedData.amount || ''}" step="any" style="font-weight:800; font-size:1.1rem; color:var(--primary);">
             </div>
           </div>
 
           <div class="form-group">
             <label class="form-label">التاجر / الجهة المستفيدة:</label>
-            <input type="text" id="parsed-merchant" class="form-input" value="${parsedData.merchant || ''}">
+            <input type="text" id="parsed-merchant" class="form-input" value="${parsedData.merchant || ''}" placeholder="اسم المتجر">
           </div>
 
           <div class="form-row">
@@ -650,6 +653,23 @@ class App {
                 ${db.state.categories.map(c => `<option value="${c.id}" ${c.id === parsedData.suggestedCategoryId ? 'selected' : ''}>${c.emoji} ${c.name}</option>`).join('')}
               </select>
             </div>
+          </div>
+
+          <div class="form-row" style="font-size: 0.75rem; color: var(--text-tertiary); margin-top: 4px;">
+            <div>
+              <span>التاريخ المستخرج:</span>
+              <strong style="color: var(--text-primary);">${parsedData.date || 'اليوم'}</strong>
+            </div>
+            <div>
+              <span>الوقت:</span>
+              <strong style="color: var(--text-primary);">${parsedData.time || ''}</strong>
+            </div>
+            ${parsedData.postBalance !== null ? `
+              <div>
+                <span>الرصيد بعد العملية:</span>
+                <strong style="color: var(--success);">${parsedData.postBalance} ريال</strong>
+              </div>
+            ` : ''}
           </div>
         </div>
       `;
@@ -680,8 +700,8 @@ class App {
         accountId,
         categoryId,
         cardId: parsedData?.resolvedCardId || null,
-        date: new Date().toISOString().split('T')[0],
-        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+        date: parsedData?.date || new Date().toISOString().split('T')[0],
+        time: parsedData?.time || new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
         rawMessage: raw,
         description: `عملية عبر رسالة بنكية (${merchant || 'تاجر'})`
       });
@@ -1357,52 +1377,118 @@ class App {
     this.bindModalCloseEvents(modalContent, modalBackdrop);
   }
 
-  // 4. Add Account Modal
-  openAddAccountModal() {
+  // 4. Add Bank / Sub-Account / Card Modal
+  openAddAccountModal(prefillBankId = null) {
     const modalBackdrop = document.getElementById('global-modal-backdrop');
     const modalContent = document.getElementById('global-modal-content');
     if (!modalBackdrop || !modalContent) return;
 
+    const banks = db.state.banks || [];
+    const selectedBankId = prefillBankId || (banks.length > 0 ? banks[0].id : 'bank-rajhi');
+
     modalContent.innerHTML = `
-      <div class="modal-sheet animate-fade-in">
+      <div class="modal-sheet animate-fade-in" style="max-width: 500px;">
         <div class="modal-header">
-          <h3>إضافة حساب بنكي / محفظة جديدة</h3>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:1.25rem;">🏛️</span>
+            <h3>${prefillBankId ? 'إضافة حساب فرعي أو بطاقة للبنك' : 'إضافة بنك / حساب / بطاقة'}</h3>
+          </div>
           <button class="btn btn-glass btn-icon btn-sm" id="modal-close-btn">${Icons.close}</button>
         </div>
 
         <div class="modal-body">
+          
+          <!-- 1. Select Bank / Wallet -->
           <div class="form-group">
-            <label class="form-label">اسم البنك / المزود:</label>
-            <select id="acc-bank-id" class="form-select">
-              ${db.state.banks.map(b => `<option value="${b.id}">${b.name}</option>`).join('')}
+            <label class="form-label">اختر البنك أو المحفظة الرقمية:</label>
+            <select id="acc-bank-id" class="form-select" style="font-weight:700;">
+              ${banks.map(b => `<option value="${b.id}" ${b.id === selectedBankId ? 'selected' : ''}>${b.logo || '🏛️'} ${b.name}</option>`).join('')}
             </select>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">اسم الحساب في التطبيق:</label>
-            <input type="text" id="acc-name" class="form-input" placeholder="مثال: الحساب الجاري، حساب الادخار..." required>
+          <!-- Custom Bank Name & Color (Shown if custom bank selected) -->
+          <div id="custom-bank-box" style="display: ${selectedBankId === 'bank-custom' ? 'block' : 'none'}; background: var(--bg-surface-secondary); padding: 10px; border-radius: var(--radius-md); margin-bottom: var(--space-md); border: 1px dashed var(--border-default);">
+            <div class="form-group" style="margin-bottom:8px;">
+              <label class="form-label">اسم البنك / المحفظة المخصصة:</label>
+              <input type="text" id="acc-custom-bank-name" class="form-input" placeholder="مثال: بنك أجنبي، محفظة إلكترونية...">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">لون تمييز البنك:</label>
+              <input type="color" id="acc-custom-bank-color" value="#4F6DF5" style="width:100%;height:38px;border:none;border-radius:var(--radius-sm);cursor:pointer;">
+            </div>
           </div>
 
+          <!-- 2. Account / Instrument Type -->
+          <div class="form-group">
+            <label class="form-label">نوع الحساب / الأداة المالية:</label>
+            <select id="acc-type" class="form-select" style="font-weight:700;">
+              <option value="checking">🏦 حساب جاري أساسي (مرتبط بمدى والعمليات اليومية)</option>
+              <option value="savings">💰 حساب ادخار / عوائد (بدون بطاقة غالباً)</option>
+              <option value="sub_account">📑 حساب فرعي مخصص (طوارئ، مصاريف، تجارة)</option>
+              <option value="credit_card">💳 بطاقة ائتمانية ذاتية (حد ائتماني مستقل)</option>
+              <option value="prepaid_card">⚡ بطاقة مسبقة الدفع / سفر (شحن فوري من الحسابات)</option>
+              <option value="digital_wallet">📱 محفظة رقمية</option>
+            </select>
+          </div>
+
+          <!-- 3. Account Name -->
+          <div class="form-group">
+            <label class="form-label">اسم الحساب / البطاقة:</label>
+            <input type="text" id="acc-name" class="form-input" placeholder="مثال: الحساب الجاري، بطاقة السفر، حساب التوفير..." required>
+          </div>
+
+          <!-- 4. Initial Balance / Credit Limit -->
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label">رقم الحساب الحقيقي:</label>
-              <input type="text" id="acc-num" class="form-input" placeholder="رقم الحساب البنكي">
+              <label class="form-label" id="label-acc-balance">الرصيد الافتتاحي (ريال):</label>
+              <input type="number" id="acc-init-bal" class="form-input" placeholder="0.00" value="0" step="any">
             </div>
-            <div class="form-group">
-              <label class="form-label">الرصيد الافتتاحي (ريال):</label>
-              <input type="number" id="acc-init-bal" class="form-input" placeholder="0.00" value="0">
+            <div class="form-group" id="group-credit-limit" style="display:none;">
+              <label class="form-label">سقف الائتمان (الحد):</label>
+              <input type="number" id="acc-credit-limit" class="form-input" placeholder="مثال: 10000" step="any">
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">الآيبان (IBAN):</label>
-            <input type="text" id="acc-iban" class="form-input" placeholder="SA..." style="font-family: var(--font-num); direction: ltr; text-align: left;">
+          <!-- 5. Optional IBAN & Account Number -->
+          <div id="group-bank-details">
+            <div class="form-group">
+              <label class="form-label">الآيبان (IBAN) - اختياري:</label>
+              <input type="text" id="acc-iban" class="form-input" placeholder="SA..." style="font-family: var(--font-num); direction: ltr; text-align: left;">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">رقم الحساب البنكي - اختياري:</label>
+              <input type="text" id="acc-num" class="form-input" placeholder="مثال: 45892019283" style="font-family: var(--font-num); direction: ltr; text-align: left;">
+            </div>
           </div>
+
+          <!-- 6. Optional Linked Card Inline -->
+          <div style="background: var(--bg-surface-secondary); padding: 12px; border-radius: var(--radius-md); margin-top: var(--space-md); border: 1px solid var(--border-subtle);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-size: 0.8125rem; font-weight: 700;">💳 ربط بطاقة بنكية بهذا الحساب الآن (اختياري):</span>
+            </div>
+            <div class="form-row">
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label" style="font-size:0.75rem;">آخر 4 أرقام من البطاقة:</label>
+                <input type="text" id="acc-card-last4" class="form-input" placeholder="مثال: 0932" maxlength="4" style="font-family: var(--font-num); direction: ltr; font-weight: 700;">
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label" style="font-size:0.75rem;">شبكة البطاقة:</label>
+                <select id="acc-card-network" class="form-select">
+                  <option value="مدى">مدى (mada)</option>
+                  <option value="فيزا">فيزا (Visa)</option>
+                  <option value="ماستركارد">ماستركارد (Mastercard)</option>
+                  <option value="Apple Pay">Apple Pay</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
         </div>
 
         <div class="modal-footer">
           <button class="btn btn-subtle" id="modal-cancel-btn">إلغاء</button>
-          <button class="btn btn-emerald" id="btn-save-acc">
+          <button class="btn btn-primary" id="btn-save-acc" style="padding: 0.65rem 1.5rem; font-weight: 800;">
             ${Icons.check}
             حفظ الحساب
           </button>
@@ -1412,28 +1498,161 @@ class App {
 
     modalBackdrop.classList.add('open');
 
-    modalContent.querySelector('#btn-save-acc').addEventListener('click', () => {
+    // Dynamic bank selection logic
+    const bankSelect = modalContent.querySelector('#acc-bank-id');
+    const customBankBox = modalContent.querySelector('#custom-bank-box');
+    bankSelect?.addEventListener('change', () => {
+      if (bankSelect.value === 'bank-custom') {
+        customBankBox.style.display = 'block';
+      } else {
+        customBankBox.style.display = 'none';
+      }
+    });
+
+    // Dynamic type logic
+    const typeSelect = modalContent.querySelector('#acc-type');
+    const creditLimitGroup = modalContent.querySelector('#group-credit-limit');
+    const labelBal = modalContent.querySelector('#label-acc-balance');
+
+    typeSelect?.addEventListener('change', () => {
+      const val = typeSelect.value;
+      if (val === 'credit_card') {
+        creditLimitGroup.style.display = 'block';
+        labelBal.textContent = 'المبلغ المستحق حالياً (ريال):';
+      } else {
+        creditLimitGroup.style.display = 'none';
+        labelBal.textContent = 'الرصيد الافتتاحي (ريال):';
+      }
+    });
+
+    // Save Account
+    modalContent.querySelector('#btn-save-acc')?.addEventListener('click', () => {
       const bankId = modalContent.querySelector('#acc-bank-id').value;
-      const name = modalContent.querySelector('#acc-name').value;
-      const accountNumber = modalContent.querySelector('#acc-num').value;
+      const accountType = modalContent.querySelector('#acc-type').value;
+      const name = modalContent.querySelector('#acc-name').value.trim();
       const initialBalance = Number(modalContent.querySelector('#acc-init-bal').value) || 0;
-      const iban = modalContent.querySelector('#acc-iban').value;
+      const creditLimit = Number(modalContent.querySelector('#acc-credit-limit')?.value) || 0;
+      const iban = modalContent.querySelector('#acc-iban').value.trim();
+      const accountNumber = modalContent.querySelector('#acc-num').value.trim();
+      const customBankName = modalContent.querySelector('#acc-custom-bank-name')?.value.trim();
+      const customBankColor = modalContent.querySelector('#acc-custom-bank-color')?.value;
+      
+      const cardLast4 = modalContent.querySelector('#acc-card-last4')?.value.trim();
+      const cardNetwork = modalContent.querySelector('#acc-card-network')?.value;
 
       if (!name) {
         alert('يرجى كتابة اسم الحساب.');
         return;
       }
 
-      db.addAccount({
+      // Add Account
+      const newAcc = db.addAccount({
         bankId,
+        accountType,
         name,
-        accountNumber: accountNumber || '000000',
+        accountNumber: accountNumber || '',
         initialBalance,
-        iban: iban || 'SA0000000000000000000000'
+        creditLimit: accountType === 'credit_card' ? creditLimit : null,
+        iban: iban || '',
+        customBankName: bankId === 'bank-custom' ? (customBankName || 'بنك مخصص') : null,
+        color: bankId === 'bank-custom' ? customBankColor : null
+      });
+
+      // Add Card if last 4 digits were provided
+      if (cardLast4 && cardLast4.length === 4 && newAcc) {
+        db.addCard({
+          accountId: newAcc.id,
+          name: `بطاقة ${cardNetwork} (${name})`,
+          last4: cardLast4,
+          type: cardNetwork
+        });
+      }
+
+      this.closeModal();
+      this.showToast('تمت إضافة الحساب والبطاقة بنجاح! 🏛️');
+    });
+
+    this.bindModalCloseEvents(modalContent, modalBackdrop);
+  }
+
+  // 4.1 Quick Card Recharge / Internal Transfer Modal
+  openRechargeCardModal(targetAccountId) {
+    const modalBackdrop = document.getElementById('global-modal-backdrop');
+    const modalContent = document.getElementById('global-modal-content');
+    if (!modalBackdrop || !modalContent) return;
+
+    const targetAcc = db.state.accounts.find(a => a.id === targetAccountId);
+    if (!targetAcc) return;
+
+    const sourceAccounts = db.state.accounts.filter(a => a.id !== targetAccountId);
+
+    modalContent.innerHTML = `
+      <div class="modal-sheet animate-fade-in" style="max-width: 440px;">
+        <div class="modal-header">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:1.25rem;">⚡</span>
+            <h3>شحن بطاقة / حساب (${targetAcc.name})</h3>
+          </div>
+          <button class="btn btn-glass btn-icon btn-sm" id="modal-close-btn">${Icons.close}</button>
+        </div>
+
+        <div class="modal-body">
+          <p style="font-size: 0.8125rem; color: var(--text-secondary); margin-bottom: var(--space-md);">
+            تحويل فوري من أحد حساباتك الجارية لتغذية رصيد البطاقة بدون أي رسوم.
+          </p>
+
+          <div class="form-group">
+            <label class="form-label">الخصم من حساب:</label>
+            <select id="recharge-from-acc" class="form-select" style="font-weight:700;">
+              ${sourceAccounts.map(a => {
+                const bal = FinancialEngine.getAccountBalance(a.id, db.state);
+                return `<option value="${a.id}">🏦 ${a.name} (المتوفر: ${bal.toLocaleString('en-US')} ريال)</option>`;
+              }).join('')}
+              <option value="cash">💵 النقدية في اليد (كاش)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">المبلغ المراد شحنه (ريال):</label>
+            <input type="number" id="recharge-amount" class="form-input" placeholder="مثال: 500" step="any" required style="font-size: 1.25rem; font-weight: 800; color: var(--primary);">
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-subtle" id="modal-cancel-btn">إلغاء</button>
+          <button class="btn btn-primary" id="btn-submit-recharge" style="padding: 0.65rem 1.5rem; font-weight: 800;">
+            ⚡ شحن البطاقة الآن
+          </button>
+        </div>
+      </div>
+    `;
+
+    modalBackdrop.classList.add('open');
+
+    modalContent.querySelector('#btn-submit-recharge')?.addEventListener('click', () => {
+      const fromAccId = modalContent.querySelector('#recharge-from-acc').value;
+      const amount = Number(modalContent.querySelector('#recharge-amount').value);
+
+      if (!amount || amount <= 0) {
+        alert('يرجى كتابة مبلغ شحن صحيح.');
+        return;
+      }
+
+      // Add Transfer Transaction
+      db.addTransaction({
+        type: 'transfer',
+        amount,
+        merchant: `شحن بطاقة ${targetAcc.name}`,
+        accountId: fromAccId,
+        toAccountId: targetAcc.id,
+        categoryId: 'cat-housing',
+        description: `تغذية وشحن رصيد بطاقة (${targetAcc.name})`,
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
       });
 
       this.closeModal();
-      this.showToast('تمت إضافة الحساب بنجاح! 🏦');
+      this.showToast(`تم شحن بطاقة ${targetAcc.name} بمبلغ ${amount} ريال بنجاح! ⚡`);
     });
 
     this.bindModalCloseEvents(modalContent, modalBackdrop);

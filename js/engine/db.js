@@ -18,19 +18,29 @@ const DEFAULT_SEED_DATA = {
     }
   },
 
-  // Reference lists — banks & categories are kept as helpers (not user data)
+  // Reference lists — Complete Saudi Banks & Digital Wallets Catalog with Official Branding
   banks: [
-    { id: 'bank-1',  name: 'مصرف الراجحي',                    code: 'RJHI', color: '#1B365D' },
-    { id: 'bank-2',  name: 'البنك الأهلي السعودي (SNB)',       code: 'NCBK', color: '#005A36' },
-    { id: 'bank-3',  name: 'مصرف الإنماء',                    code: 'INMA', color: '#886221' },
-    { id: 'bank-4',  name: 'بنك الجزيرة',                     code: 'BJAZ', color: '#E8412A' },
-    { id: 'bank-5',  name: 'البنك السعودي الفرنسي (Alfransi)', code: 'BSFR', color: '#002D6B' },
-    { id: 'bank-6',  name: 'بنك الرياض',                      code: 'RIBL', color: '#1C3D77' },
-    { id: 'bank-7',  name: 'البنك السعودي للاستثمار (SAIB)',   code: 'SAIB', color: '#004B8D' },
-    { id: 'bank-8',  name: 'بنك الاتحاد',                     code: 'UBNK', color: '#D41E2E' },
-    { id: 'bank-9',  name: 'STC Pay (محفظة رقمية)',            code: 'STCP', color: '#4F008C' },
-    { id: 'bank-10', name: 'Apple Pay / نقدية',                code: 'CASH', color: '#1D1D1F' },
-    { id: 'bank-11', name: 'بنك آخر',                         code: 'OTHR', color: '#64748B' }
+    { id: 'bank-rajhi',   name: 'مصرف الراجحي',                     code: 'RJHI', color: '#002D62', logo: '🏛️ Al Rajhi' },
+    { id: 'bank-snb',     name: 'البنك الأهلي السعودي (SNB)',        code: 'NCBK', color: '#005A36', logo: '🏛️ SNB' },
+    { id: 'bank-inma',    name: 'مصرف الإنماء',                     code: 'INMA', color: '#886221', logo: '🏛️ Alinma' },
+    { id: 'bank-riyad',   name: 'بنك الرياض',                       code: 'RIBL', color: '#1C3D77', logo: '🏛️ Riyad' },
+    { id: 'bank-sab',     name: 'البنك الأول / ساب (SAB)',          code: 'SABB', color: '#D81E05', logo: '🏛️ SAB' },
+    { id: 'bank-bsf',     name: 'البنك السعودي الفرنسي (BSF)',       code: 'BSFR', color: '#002D6B', logo: '🏛️ BSF' },
+    { id: 'bank-anb',     name: 'البنك العربي الوطني (ANB)',        code: 'ANBK', color: '#005A9C', logo: '🏛️ ANB' },
+    { id: 'bank-bilad',   name: 'بنك البلاد',                      code: 'ALBI', color: '#93182A', logo: '🏛️ Albilad' },
+    { id: 'bank-jazira',  name: 'بنك الجزيرة',                      code: 'BJAZ', color: '#004F2D', logo: '🏛️ AlJazira' },
+    { id: 'bank-saib',    name: 'البنك السعودي للاستثمار (SAIB)',    code: 'SAIB', color: '#004B8D', logo: '🏛️ SAIB' },
+    { id: 'bank-meem',    name: 'بنك الخليج الدولي / ميم (meem)',   code: 'GIBB', color: '#982574', logo: '💜 meem' },
+    { id: 'bank-d360',    name: 'بنك D360 الرقمي',                 code: 'D360', color: '#582CD6', logo: '📱 D360' },
+    { id: 'bank-one',     name: 'بنك ون الرقمي (One Bank)',         code: 'ONEB', color: '#00C2FF', logo: '📱 One' },
+    { id: 'bank-stcpay',  name: 'STC Pay / بنك STC',               code: 'STCP', color: '#4F008C', logo: '💜 STC Pay' },
+    { id: 'bank-urpay',   name: 'محفظة Urpay (يورباي)',             code: 'URPY', color: '#1D4ED8', logo: '💙 Urpay' },
+    { id: 'bank-tiqmo',   name: 'محفظة Tiqmo (تيقمو)',              code: 'TQMO', color: '#FF6B00', logo: '🧡 Tiqmo' },
+    { id: 'bank-mobily',  name: 'محفظة Mobily Pay (موبايلي باي)',   code: 'MPAY', color: '#00A3E0', logo: '🩵 Mobily' },
+    { id: 'bank-tamara',  name: 'محفظة تمارا (Tamara)',             code: 'TAMR', color: '#FF782D', logo: '🛍️ Tamara' },
+    { id: 'bank-tabby',   name: 'محفظة تابي (Tabby)',               code: 'TABY', color: '#3DF99B', logo: '🛍️ Tabby' },
+    { id: 'bank-cash',    name: 'النقدية في اليد (الكاش)',           code: 'CASH', color: '#10B981', logo: '💵 Cash' },
+    { id: 'bank-custom',  name: '+ بنك أو محفظة أخرى مخصصة',        code: 'CUST', color: '#64748B', logo: '🏦 Custom' }
   ],
 
   categories: [
