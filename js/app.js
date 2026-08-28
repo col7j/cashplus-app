@@ -1401,7 +1401,7 @@ class App {
 
         <div class="modal-body">
           
-          <!-- 1. Select Bank / Wallet with Live SVG Logo Preview -->
+          <!-- 1. Select Bank / Wallet with Live Logo Preview -->
           <div class="form-group">
             <label class="form-label">اختر البنك أو المحفظة الرقمية:</label>
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
@@ -1413,6 +1413,25 @@ class App {
                   ${banks.map(b => `<option value="${b.id}" ${b.id === selectedBankId ? 'selected' : ''}>${b.name}</option>`).join('')}
                 </select>
               </div>
+            </div>
+          </div>
+
+          <!-- Logo Customizer: Upload Image File or Enter URL -->
+          <div style="background: var(--bg-surface-secondary); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 12px; margin-bottom: var(--space-md);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <label class="form-label" style="margin: 0; font-weight: 700;">🖼️ تخصيص صورة الشعار (رفع صورة من جهازك):</label>
+              <button type="button" id="btn-reset-logo" class="btn-link" style="font-size: 0.75rem; color: var(--danger-text); display: none; background: none; border: none; cursor: pointer;">إلغاء الصورة</button>
+            </div>
+            
+            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
+              <label class="btn btn-glass btn-sm" style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-weight: 700; width: 100%; justify-content: center; padding: 0.6rem;">
+                📁 اختر صورة الشعار من جهازك (PNG / JPG / WebP)
+                <input type="file" id="acc-logo-file" accept="image/*" style="display: none;">
+              </label>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <input type="url" id="acc-logo-url" class="form-input" placeholder="أو الصق رابط صورة الشعار مباشرة (URL)..." style="font-size: 0.8125rem;">
             </div>
           </div>
 
@@ -1508,21 +1527,63 @@ class App {
 
     modalBackdrop.classList.add('open');
 
+    let customLogoData = null;
+
     // Dynamic bank selection logic & live logo preview
     const bankSelect = modalContent.querySelector('#acc-bank-id');
     const customBankBox = modalContent.querySelector('#custom-bank-box');
     const logoPreview = modalContent.querySelector('#modal-bank-logo-preview');
+    const logoFileInput = modalContent.querySelector('#acc-logo-file');
+    const logoUrlInput = modalContent.querySelector('#acc-logo-url');
+    const resetLogoBtn = modalContent.querySelector('#btn-reset-logo');
+
+    const updateLogoPreview = () => {
+      const selectedId = bankSelect ? bankSelect.value : 'bank-rajhi';
+      if (logoPreview) {
+        logoPreview.innerHTML = BankRegistry.getLogoHtml(selectedId, 48, customLogoData);
+      }
+      if (resetLogoBtn) {
+        resetLogoBtn.style.display = customLogoData ? 'inline' : 'none';
+      }
+    };
     
     bankSelect?.addEventListener('change', () => {
       const selectedId = bankSelect.value;
-      if (logoPreview) {
-        logoPreview.innerHTML = BankRegistry.getLogoHtml(selectedId, 48);
-      }
+      updateLogoPreview();
       if (selectedId === 'bank-custom') {
         customBankBox.style.display = 'block';
       } else {
         customBankBox.style.display = 'none';
       }
+    });
+
+    // File upload handler
+    logoFileInput?.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          customLogoData = event.target.result;
+          if (logoUrlInput) logoUrlInput.value = '';
+          updateLogoPreview();
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // URL input handler
+    logoUrlInput?.addEventListener('input', () => {
+      const val = logoUrlInput.value.trim();
+      customLogoData = val || null;
+      updateLogoPreview();
+    });
+
+    // Reset logo button
+    resetLogoBtn?.addEventListener('click', () => {
+      customLogoData = null;
+      if (logoFileInput) logoFileInput.value = '';
+      if (logoUrlInput) logoUrlInput.value = '';
+      updateLogoPreview();
     });
 
     // Dynamic type logic
@@ -1561,7 +1622,7 @@ class App {
         return;
       }
 
-      // Add Account
+      // Add Account with custom logo support
       const newAcc = db.addAccount({
         bankId,
         accountType,
@@ -1571,6 +1632,7 @@ class App {
         creditLimit: accountType === 'credit_card' ? creditLimit : null,
         iban: iban || '',
         customBankName: bankId === 'bank-custom' ? (customBankName || 'بنك مخصص') : null,
+        customLogoUrl: customLogoData || null,
         color: bankId === 'bank-custom' ? customBankColor : null
       });
 
@@ -1586,6 +1648,113 @@ class App {
 
       this.closeModal();
       this.showToast('تمت إضافة الحساب والبطاقة بنجاح! 🏛️');
+    });
+
+    this.bindModalCloseEvents(modalContent, modalBackdrop);
+  }
+
+  // 4.0 Edit Bank Logo Modal
+  openEditBankLogoModal(bankId) {
+    const modalBackdrop = document.getElementById('global-modal-backdrop');
+    const modalContent = document.getElementById('global-modal-content');
+    if (!modalBackdrop || !modalContent) return;
+
+    const bankRef = BankRegistry.find(bankId);
+    const accounts = db.state.accounts.filter(a => a.bankId === bankId);
+    let currentLogoUrl = accounts.find(a => a.customLogoUrl)?.customLogoUrl || null;
+    let newLogoData = currentLogoUrl;
+
+    modalContent.innerHTML = `
+      <div class="modal-sheet animate-fade-in" style="max-width: 440px;">
+        <div class="modal-header">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:1.25rem;">🖼️</span>
+            <h3>تغيير شعار (${bankRef.name})</h3>
+          </div>
+          <button class="btn btn-glass btn-icon btn-sm" id="modal-close-btn">${Icons.close}</button>
+        </div>
+
+        <div class="modal-body" style="text-align: center;">
+          <p style="font-size: 0.8125rem; color: var(--text-secondary); margin-bottom: var(--space-md);">
+            ارفع صورة الشعار الرسمية من جهازك أو ضع رابط الصورة لتظهر لجميع حسابات هذا البنك:
+          </p>
+
+          <div style="display: flex; justify-content: center; margin-bottom: var(--space-md);">
+            <div id="edit-bank-logo-preview">
+              ${BankRegistry.getLogoHtml(bankId, 64, newLogoData)}
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: var(--space-md);">
+            <label class="btn btn-glass" style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; padding: 0.75rem;">
+              📁 اختر صورة من جهازك (PNG / JPG)
+              <input type="file" id="edit-logo-file-input" accept="image/*" style="display: none;">
+            </label>
+            <input type="url" id="edit-logo-url-input" class="form-input" placeholder="أو الصق رابط صورة الشعار (URL)..." value="${currentLogoUrl || ''}">
+          </div>
+
+          <button type="button" id="btn-reset-edit-logo" class="btn btn-subtle btn-sm" style="width: 100%; margin-bottom: var(--space-md); color: var(--danger-text);">
+            استعادة الشعار الافتراضي
+          </button>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-subtle" id="modal-cancel-btn">إلغاء</button>
+          <button class="btn btn-primary" id="btn-save-edit-logo" style="padding: 0.65rem 1.5rem; font-weight: 800;">
+            💾 حفظ الشعار الجديد
+          </button>
+        </div>
+      </div>
+    `;
+
+    modalBackdrop.classList.add('open');
+
+    const previewContainer = modalContent.querySelector('#edit-bank-logo-preview');
+    const fileInput = modalContent.querySelector('#edit-logo-file-input');
+    const urlInput = modalContent.querySelector('#edit-logo-url-input');
+    const resetBtn = modalContent.querySelector('#btn-reset-edit-logo');
+
+    const updatePreview = () => {
+      if (previewContainer) {
+        previewContainer.innerHTML = BankRegistry.getLogoHtml(bankId, 64, newLogoData);
+      }
+    };
+
+    fileInput?.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          newLogoData = event.target.result;
+          if (urlInput) urlInput.value = '';
+          updatePreview();
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    urlInput?.addEventListener('input', () => {
+      newLogoData = urlInput.value.trim() || null;
+      updatePreview();
+    });
+
+    resetBtn?.addEventListener('click', () => {
+      newLogoData = null;
+      if (fileInput) fileInput.value = '';
+      if (urlInput) urlInput.value = '';
+      updatePreview();
+    });
+
+    modalContent.querySelector('#btn-save-edit-logo')?.addEventListener('click', () => {
+      // Update all accounts under this bank
+      db.state.accounts.forEach(acc => {
+        if (acc.bankId === bankId) {
+          acc.customLogoUrl = newLogoData;
+        }
+      });
+      db.save();
+      this.closeModal();
+      this.showToast('تم تحديث شعار البنك بنجاح! 🖼️');
     });
 
     this.bindModalCloseEvents(modalContent, modalBackdrop);

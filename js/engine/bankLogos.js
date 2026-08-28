@@ -405,10 +405,13 @@ export class BankRegistry {
   }
 
   /**
-   * Get Logo SVG element formatted
+   * Get Logo element formatted (Supports custom user-uploaded image URL or default SVG)
    */
-  static getLogoHtml(idOrCode, size = 44) {
+  static getLogoHtml(idOrCode, size = 44, customLogoUrl = null) {
+    if (customLogoUrl) {
+      return `<div style="width:${size}px;height:${size}px;min-width:${size}px;border-radius:12px;overflow:hidden;background:#FFFFFF;border:1px solid var(--border-default);display:inline-flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.08);"><img src="${customLogoUrl}" style="width:100%;height:100%;object-fit:contain;padding:2px;" alt="شعار"></div>`;
+    }
     const bank = this.find(idOrCode);
-    return `<div style="width:${size}px;height:${size}px;min-width:${size}px;border-radius:10px;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.15);">${bank.logoSvg}</div>`;
+    return `<div style="width:${size}px;height:${size}px;min-width:${size}px;border-radius:12px;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.12);">${bank.logoSvg}</div>`;
   }
 }

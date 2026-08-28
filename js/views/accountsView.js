@@ -26,10 +26,13 @@ export class AccountsView {
             info: {
               ...bankRef,
               name: acc.customBankName || bankRef.name,
-              color: acc.color || bankRef.color
+              color: acc.color || bankRef.color,
+              customLogoUrl: acc.customLogoUrl || null
             },
             accounts: []
           };
+        } else if (acc.customLogoUrl && !bankGroups[bankId].info.customLogoUrl) {
+          bankGroups[bankId].info.customLogoUrl = acc.customLogoUrl;
         }
         bankGroups[bankId].accounts.push(acc);
       });
@@ -109,7 +112,7 @@ export class AccountsView {
                 <div style="font-size: 3rem; margin-bottom: var(--space-xs);">🏦</div>
                 <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 8px;">لا توجد حسابات أو بنوك مضافة</h3>
                 <p style="font-size: 0.875rem; color: var(--text-tertiary); max-width: 440px; margin: 0 auto 1.5rem auto;">
-                  أضف بنكك الأول (الراجحي، الأهلي، الإنماء، STC Pay...)، وستتمكن من إنشاء حسابات جارية وادخار وبطاقات ائتمانية ومسبقة الدفع تحته في كتلة واحدة.
+                  أضف بنكك الأول (الراجحي، الأهلي، الإنماء، STC Pay...)، وستتمكن من إنشاء حسابات جارية وادخار وبطاقات ائتمانية ومسبقة الدفع تحته في كتلة واحدة مع رفع شعار مخصص.
                 </p>
                 <button class="btn btn-primary btn-sm" id="acc-btn-empty-add">+ إضافة أول بنك / حساب</button>
               </div>
@@ -125,7 +128,7 @@ export class AccountsView {
                   <!-- Master Bank Header -->
                   <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-md); border-bottom: 1px solid var(--border-subtle); padding-bottom: 1.25rem; margin-bottom: 1.25rem;">
                     <div style="display: flex; align-items: center; gap: 12px;">
-                      ${BankRegistry.getLogoHtml(bank.id, 46)}
+                      ${BankRegistry.getLogoHtml(bank.id, 48, bank.customLogoUrl)}
                       <div>
                         <div style="display: flex; align-items: center; gap: 8px;">
                           <h3 style="font-size: 1.2rem; font-weight: 800; margin: 0;">${bank.name}</h3>
@@ -143,7 +146,10 @@ export class AccountsView {
                           <span class="num">${bankTotal.toLocaleString('en-US')}</span> <small style="font-size:0.75rem;">ريال</small>
                         </div>
                       </div>
-                      <div style="display: flex; gap: 6px;">
+                      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                        <button class="btn btn-glass btn-sm btn-edit-bank-logo" data-bank-id="${bank.id}" style="padding: 0.4rem 0.75rem; font-size: 0.75rem;">
+                          🖼️ تغيير الشعار
+                        </button>
                         <button class="btn btn-primary btn-sm btn-add-sub-acc" data-bank-id="${bank.id}" style="padding: 0.4rem 0.85rem; font-size: 0.8125rem;">
                           + إضافة حساب فرعي / بطاقة
                         </button>
@@ -299,6 +305,14 @@ export class AccountsView {
         btn.addEventListener('click', () => {
           const bankId = btn.getAttribute('data-bank-id');
           openAdd(bankId);
+        });
+      });
+
+      // Edit Bank Logo button
+      container.querySelectorAll('.btn-edit-bank-logo').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const bankId = btn.getAttribute('data-bank-id');
+          window.app.openEditBankLogoModal(bankId);
         });
       });
 
