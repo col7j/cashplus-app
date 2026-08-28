@@ -368,8 +368,20 @@
   .mobile-bottom-nav {
     display: none !important;
   }
-  .main-wrapper {
-    padding-bottom: var(--space-2xl);
+}
+
+@media (min-width: 769px) {
+  #landing-mobile-bar {
+    display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  #landing-mobile-bar {
+    display: flex !important;
+  }
+  .landing-page-root {
+    padding-bottom: 5rem !important;
   }
 }
 

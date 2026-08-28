@@ -46,27 +46,52 @@ const googleProvider = new GoogleAuthProvider();
 
 googleProvider.setCustomParameters({ prompt: 'select_account', hl: 'ar' });
 
-// ─── Firestore Helpers ───────────────────────────────────────────────────────
-function userDocRef(uid) {
+// ─── Firestore Helpers (Dual Target for 100% Compatibility) ──────────────────
+function userPrimaryDoc(uid) {
+  return doc(firestore, 'users', uid);
+}
+
+function userSubDoc(uid) {
   return doc(firestore, 'users', uid, 'data', 'financialState');
 }
 
 async function pushToFirestore(uid, state) {
+  if (!uid || !state) return;
   try {
-    await setDoc(userDocRef(uid), {
-      ...state,
+    const cleanState = JSON.parse(JSON.stringify(state));
+    delete cleanState._syncedAt;
+    delete cleanState._version;
+
+    const payload = {
+      ...cleanState,
       _syncedAt: serverTimestamp(),
-      _version: 2
-    }, { merge: false });
+      _version: 3
+    };
+
+    // Save to both references for maximum compatibility with all Firestore rule configurations
+    await setDoc(userPrimaryDoc(uid), payload, { merge: true });
+    await setDoc(userSubDoc(uid), payload, { merge: true }).catch(() => {});
+    return true;
   } catch (err) {
     console.error('[CashPlus] Firestore write error:', err);
+    throw err;
   }
 }
 
 async function pullFromFirestore(uid) {
+  if (!uid) return null;
   try {
-    const snap = await getDoc(userDocRef(uid));
-    if (snap.exists()) {
+    // 1. Try primary doc
+    let snap = await getDoc(userPrimaryDoc(uid));
+    if (!snap.exists() || !snap.data()?.accounts) {
+      // 2. Try subcollection doc
+      const subSnap = await getDoc(userSubDoc(uid)).catch(() => null);
+      if (subSnap && subSnap.exists()) {
+        snap = subSnap;
+      }
+    }
+
+    if (snap && snap.exists()) {
       const data = snap.data();
       delete data._syncedAt;
       delete data._version;
@@ -81,10 +106,10 @@ async function pullFromFirestore(uid) {
 // ─── Cloud Auth Manager ───────────────────────────────────────────────────────
 class CloudAuthManager {
   constructor() {
-    this.currentUser  = null;
-    this.syncStatus   = 'offline'; // 'offline' | 'syncing' | 'synced' | 'error'
-    this.listeners    = [];
-    this._unsubSnap   = null;      // Firestore real-time listener unsubscribe
+    this.currentUser   = null;
+    this.syncStatus    = 'offline'; // 'offline' | 'syncing' | 'synced' | 'error'
+    this.listeners     = [];
+    this._unsubSnap    = null;      // Firestore real-time listener unsubscribe
     this._syncThrottle = null;
 
     // Listen for Firebase Auth state changes
@@ -110,16 +135,17 @@ class CloudAuthManager {
     this.syncStatus = 'syncing';
     this.notify();
 
-    // Pull cloud data first (cloud wins over local if user document exists in Firestore)
+    // Pull cloud data first (cloud wins over local on any device upon login)
     const cloudData = await pullFromFirestore(this.currentUser.uid);
     if (cloudData && (cloudData.accounts !== undefined || cloudData.transactions !== undefined || cloudData.settings !== undefined)) {
-      db.save(cloudData);
+      // Load cloud data silently into memory and local storage
+      db.saveQuiet(cloudData);
     } else {
-      // First login / fresh account — initialize cloud document with current state
-      await pushToFirestore(this.currentUser.uid, db.state);
+      // First login / fresh account on cloud — push current local state to initialize cloud document
+      await pushToFirestore(this.currentUser.uid, db.state).catch(() => {});
     }
 
-    // Start real-time listener for this user's document
+    // Start real-time listener for this user's document across open devices/tabs
     this._startRealtimeSync();
 
     this.syncStatus = 'synced';
@@ -127,11 +153,19 @@ class CloudAuthManager {
   }
 
   _onUserSignedOut() {
+    // 1. Cancel any pending outbound push immediately
+    clearTimeout(this._syncThrottle);
+    this._syncThrottle = null;
+
+    // 2. Stop Firestore listener
     this._stopRealtimeSync();
+
+    // 3. Clear user authentication
     this.currentUser = null;
     this.syncStatus  = 'offline';
-    // Strict Privacy: clear all financial data from browser memory and localStorage
-    db.resetToEmptyState();
+
+    // 4. Strict Privacy: clear all financial data from browser memory and localStorage WITHOUT pushing to cloud
+    db.resetToEmptyState(false);
     this.notify();
   }
 
@@ -140,34 +174,36 @@ class CloudAuthManager {
     this._stopRealtimeSync();
     if (!this.currentUser) return;
 
-    this._unsubSnap = onSnapshot(
-      userDocRef(this.currentUser.uid),
-      { includeMetadataChanges: false },
-      (snap) => {
-        if (snap.exists() && !snap.metadata.hasPendingWrites) {
-          const data = snap.data();
-          delete data._syncedAt;
-          delete data._version;
-          // Update local DB silently (without triggering another push loop)
-          db.saveQuiet(data);
+    try {
+      this._unsubSnap = onSnapshot(
+        userPrimaryDoc(this.currentUser.uid),
+        { includeMetadataChanges: false },
+        (snap) => {
+          if (snap.exists() && !snap.metadata.hasPendingWrites) {
+            const data = snap.data();
+            delete data._syncedAt;
+            delete data._version;
+            // Update local DB quietly without re-triggering cloud push loop
+            db.saveQuiet(data);
+          }
+        },
+        (err) => {
+          console.warn('[CashPlus] Firestore snapshot listener warning:', err);
         }
-      },
-      (err) => {
-        console.warn('[CashPlus] Firestore snapshot error:', err);
-        this.syncStatus = 'error';
-        this.notify();
-      }
-    );
+      );
+    } catch (e) {
+      console.warn('[CashPlus] Error setting up onSnapshot:', e);
+    }
   }
 
   _stopRealtimeSync() {
     if (this._unsubSnap) {
-      this._unsubSnap();
+      try { this._unsubSnap(); } catch {}
       this._unsubSnap = null;
     }
   }
 
-  // ── Outbound Sync (Direct & Throttled) ──────────────────────────────────
+  // ── Outbound Sync (Direct Push & Throttled) ──────────────────────────────
   async pushImmediate(state) {
     if (!this.currentUser) return;
     try {
@@ -175,7 +211,7 @@ class CloudAuthManager {
       this.syncStatus = 'synced';
       this.notify();
     } catch (err) {
-      console.error('[CashPlus] Firestore direct push error:', err);
+      console.error('[CashPlus] Direct push error:', err);
       this.syncStatus = 'error';
       this.notify();
     }
@@ -188,10 +224,16 @@ class CloudAuthManager {
 
     clearTimeout(this._syncThrottle);
     this._syncThrottle = setTimeout(async () => {
-      await pushToFirestore(this.currentUser.uid, db.state);
-      this.syncStatus = 'synced';
-      this.notify();
-    }, 1000);
+      if (!this.currentUser) return;
+      try {
+        await pushToFirestore(this.currentUser.uid, db.state);
+        this.syncStatus = 'synced';
+        this.notify();
+      } catch (e) {
+        this.syncStatus = 'error';
+        this.notify();
+      }
+    }, 800);
   }
 
   // ── Public Auth Methods ──────────────────────────────────────────────────
@@ -274,6 +316,7 @@ class CloudAuthManager {
       'auth/network-request-failed': 'خطأ في الاتصال بالإنترنت.',
       'auth/too-many-requests':      'محاولات كثيرة جداً، الرجاء الانتظار قليلاً.',
       'auth/invalid-credential':     'البيانات غير صحيحة، تحقق من البريد وكلمة المرور.',
+      'permission-denied':           'قواعد بيانات Firestore تمنع الكتابة. يرجى تفعيل قواعد القراءة والكتابة في Firebase Console.',
     };
     const msg = map[err.code] || `خطأ: ${err.message}`;
     return new Error(msg);
@@ -297,5 +340,7 @@ export const cloudAuth = new CloudAuthManager();
 
 // ─── Auto-push when local DB changes ─────────────────────────────────────────
 db.subscribe(() => {
-  cloudAuth.triggerCloudSync();
+  if (cloudAuth.currentUser) {
+    cloudAuth.pushImmediate(db.state);
+  }
 });

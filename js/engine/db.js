@@ -457,14 +457,16 @@ class Database {
     this.save(JSON.parse(JSON.stringify(DEFAULT_SEED_DATA)));
   }
 
-  resetToEmptyState() {
+  resetToEmptyState(notify = false) {
     this.state = JSON.parse(JSON.stringify(DEFAULT_SEED_DATA));
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
     } catch (e) {
       console.error('Failed to clear localStorage:', e);
     }
-    this.notify();
+    if (notify) {
+      this.notify();
+    }
   }
 }
 
