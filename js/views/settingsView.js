@@ -59,7 +59,15 @@ export class SettingsView {
                     </div>
                     <span class="badge badge-success">متصل ✓</span>
                   </div>
-                  <button class="btn btn-subtle" id="btn-settings-logout" style="width:100%;">تسجيل الخروج</button>
+                  <div style="display: flex; gap: 8px; margin-top: var(--space-sm);">
+                    <button class="btn btn-glass btn-sm" id="btn-test-cloud" style="flex: 1.2; font-weight: 700;">
+                      🧪 فحص واختبار قواعد البيانات
+                    </button>
+                    <button class="btn btn-subtle btn-sm" id="btn-settings-logout" style="flex: 0.8; color: var(--danger-text);">
+                      تسجيل الخروج
+                    </button>
+                  </div>
+                  <div id="cloud-diagnostic-result" style="display: none; margin-top: 10px; padding: 12px; border-radius: var(--radius-sm); font-size: 0.8125rem; line-height: 1.6;"></div>
                 ` : `
                   <!-- Logged Out State -->
                   <div style="padding: var(--space-md); background: var(--bg-surface-secondary);
@@ -287,6 +295,44 @@ export class SettingsView {
       // Login button
       container.querySelector('#btn-settings-login')?.addEventListener('click', () => {
         window.app.openAuthModal();
+      });
+
+      // Test Cloud Connection Diagnostic
+      container.querySelector('#btn-test-cloud')?.addEventListener('click', async () => {
+        const resultBox = container.querySelector('#cloud-diagnostic-result');
+        const testBtn = container.querySelector('#btn-test-cloud');
+        if (!resultBox) return;
+
+        resultBox.style.display = 'block';
+        resultBox.style.background = 'var(--primary-surface)';
+        resultBox.style.border = '1px solid var(--primary-border)';
+        resultBox.style.color = 'var(--primary-text)';
+        resultBox.innerHTML = '⏳ جارٍ فحص قراءة وكتابة البيانات في قاعدة بيانات Firestore...';
+        if (testBtn) testBtn.disabled = true;
+
+        const res = await cloudAuth.testCloudConnection();
+        if (testBtn) testBtn.disabled = false;
+
+        if (res.success) {
+          resultBox.style.background = 'var(--success-surface)';
+          resultBox.style.border = '1px solid var(--success-border)';
+          resultBox.style.color = 'var(--success-text)';
+          resultBox.innerHTML = `
+            <strong>${res.message}</strong><br>
+            <small style="color:var(--text-secondary);">مسار الوثيقة: <code>${res.docPath}</code> | زمن الاستجابة: ${res.latencyMs}ms | الحسابات: ${res.accountsCount} | الحركات: ${res.transactionsCount}</small>
+          `;
+          window.app.showToast('✅ الاتصال السحابي يعمل بكفاءة 100%');
+        } else {
+          resultBox.style.background = 'var(--danger-surface)';
+          resultBox.style.border = '1px solid var(--danger-border)';
+          resultBox.style.color = 'var(--danger-text)';
+          resultBox.innerHTML = `
+            <strong>❌ تعذر الحفظ السحابي:</strong> ${res.message}<br>
+            ${res.fixGuide ? `<div style="margin-top:6px;padding:6px;background:rgba(0,0,0,0.2);border-radius:4px;"><small>💡 ${res.fixGuide}</small></div>` : ''}
+            ${res.rulesUrl ? `<div style="margin-top:6px;"><a href="${res.rulesUrl}" target="_blank" class="btn btn-sm btn-primary" style="display:inline-block;padding:3px 10px;font-size:0.75rem;text-decoration:none;">فتح إعدادات قواعد Firestore ↗</a></div>` : ''}
+          `;
+          window.app.showToast('⚠️ تنبيه: يرجى تفعيل قواعد Firestore');
+        }
       });
 
       // Logout button

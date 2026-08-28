@@ -308,6 +308,58 @@ class CloudAuthManager {
     }
   }
 
+  // ── Diagnostic Tool to Test Real-time Read & Write ───────────────────────
+  async testCloudConnection() {
+    if (!this.currentUser) {
+      return { success: false, message: 'يجب تسجيل الدخول أولاً لإجراء الفحص السحابي.' };
+    }
+    const uid = this.currentUser.uid;
+    const start = performance.now();
+    try {
+      // 1. Test Write
+      await setDoc(userPrimaryDoc(uid), {
+        _diagnosticCheck: true,
+        _checkTimestamp: serverTimestamp(),
+        ...db.state
+      }, { merge: true });
+
+      // 2. Test Read
+      const snap = await getDoc(userPrimaryDoc(uid));
+      const duration = Math.round(performance.now() - start);
+
+      if (snap.exists()) {
+        return {
+          success: true,
+          latencyMs: duration,
+          accountsCount: db.state.accounts.length,
+          transactionsCount: db.state.transactions.length,
+          docPath: `users/${uid}`,
+          message: `✅ اتصال سحابي ناجح 100%! تم التحقق من القراءة والكتابة في قاعدة بيانات Firestore (${duration}ms).`
+        };
+      } else {
+        return {
+          success: false,
+          message: 'تم إرسال البيانات ولكن لم يتم استرجاع المستند من Firestore.'
+        };
+      }
+    } catch (err) {
+      console.error('[CashPlus] Diagnostic check failed:', err);
+      let reason = err.message;
+      let fixGuide = '';
+      if (err.code === 'permission-denied' || err.message?.includes('permission')) {
+        reason = 'تم رفض الصلاحية من خوادم Google (Permission Denied). قواعد الحماية في Firebase Console تمنع الكتابة.';
+        fixGuide = 'افتح صفحة قواعد Firestore في Firebase Console وضع القاعدة allow read, write: if request.auth != null;';
+      }
+      return {
+        success: false,
+        error: err.code || 'write-error',
+        message: reason,
+        fixGuide: fixGuide,
+        rulesUrl: 'https://console.firebase.google.com/project/cash-plus-90e0c/firestore/rules'
+      };
+    }
+  }
+
   // ── Error Messages in Arabic ─────────────────────────────────────────────
   _humanizeError(err) {
     const map = {
