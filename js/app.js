@@ -1379,24 +1379,30 @@ class App {
     modalContent.innerHTML = `
       <div class="modal-sheet animate-fade-in">
         <div class="modal-header">
-          <h3>إنشاء هدف ادخار جديد</h3>
+          <div style="display: flex; align-items: center; gap: var(--space-xs);">
+            <span style="font-size: 1.25rem;">🎯</span>
+            <h3>إنشاء هدف ادخار وصندوق جديد</h3>
+          </div>
           <button class="btn btn-glass btn-icon btn-sm" id="modal-close-btn">${Icons.close}</button>
         </div>
 
         <div class="modal-body">
           <div class="form-row">
             <div class="form-group" style="flex: 2;">
-              <label class="form-label">اسم الهدف:</label>
-              <input type="text" id="sg-name" class="form-input" placeholder="مثال: صندوق الطوارئ..." required>
+              <label class="form-label">اسم الصندوق / الهدف:</label>
+              <input type="text" id="sg-name" class="form-input" placeholder="مثال: صندوق الطوارئ، سيارة جديدة..." required>
             </div>
             <div class="form-group" style="flex: 1;">
               <label class="form-label">الرمز:</label>
               <select id="sg-emoji" class="form-select">
-                <option value="🎯">🎯 هدف</option>
-                <option value="🛡️">🛡️ طوارئ</option>
-                <option value="💻">💻 أجهزة</option>
+                <option value="🎯">🎯 هدف عام</option>
+                <option value="🛡️">🛡️ صندوق طوارئ</option>
+                <option value="🕌">🕌 صدقة وزكاة</option>
                 <option value="🚗">🚗 سيارة</option>
+                <option value="🏠">🏠 منزل</option>
+                <option value="💻">💻 أجهزة</option>
                 <option value="✈️">✈️ سفر</option>
+                <option value="💍">💍 زواج</option>
               </select>
             </div>
           </div>
@@ -1412,15 +1418,31 @@ class App {
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">تاريخ الهدف:</label>
-            <input type="date" id="sg-date" class="form-input">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">تاريخ بدء الادخار / الحول:</label>
+              <input type="date" id="sg-start-date" class="form-input" value="${new Date().toISOString().split('T')[0]}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">تاريخ تحقيق الهدف (اختياري):</label>
+              <input type="date" id="sg-date" class="form-input">
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top: var(--space-xs);">
+            <label style="display: flex; align-items: center; gap: var(--space-xs); font-size: 0.8125rem; cursor: pointer;">
+              <input type="checkbox" id="sg-is-hawl-passed">
+              <span>🕌 <strong>دار عليه الحول</strong> (مرت سنة كاملة على ملكية هذا المال وتجب فيه الزكاة بنسبة 2.5%)</span>
+            </label>
           </div>
         </div>
 
         <div class="modal-footer">
           <button class="btn btn-subtle" id="modal-cancel-btn">إلغاء</button>
-          <button class="btn btn-emerald" id="btn-save-sg">إنشاء الهدف</button>
+          <button class="btn btn-primary" id="btn-save-sg">
+            ${Icons.check}
+            إنشاء الصندوق
+          </button>
         </div>
       </div>
     `;
@@ -1432,13 +1454,23 @@ class App {
       const emoji = modalContent.querySelector('#sg-emoji').value;
       const targetAmount = Number(modalContent.querySelector('#sg-target').value);
       const currentAmount = Number(modalContent.querySelector('#sg-current').value) || 0;
+      let startDate = modalContent.querySelector('#sg-start-date').value;
       const targetDate = modalContent.querySelector('#sg-date').value;
+      const isHawlPassed = modalContent.querySelector('#sg-is-hawl-passed').checked;
 
-      if (!name || !targetAmount) return;
+      if (!name || !targetAmount || isNaN(targetAmount)) {
+        alert('يرجى كتابة اسم الهدف والمبلغ المستهدف.');
+        return;
+      }
 
-      db.addSavingsGoal({ name, emoji, targetAmount, currentAmount, targetDate });
+      if (isHawlPassed) {
+        // Set start date to 1 year ago so it's marked as Hawl passed
+        startDate = new Date(Date.now() - 365 * 24 * 3600 * 1000).toISOString().split('T')[0];
+      }
+
+      db.addSavingsGoal({ name, emoji, targetAmount, currentAmount, startDate, targetDate });
       this.closeModal();
-      this.showToast('تم إنشاء هدف الادخار بنجاح! 🎯');
+      this.showToast('تم إنشاء هدف الادخار وتفعيل تتبع الزكاة بنجاح! 🎯');
     });
 
     this.bindModalCloseEvents(modalContent, modalBackdrop);
