@@ -110,12 +110,12 @@ class CloudAuthManager {
     this.syncStatus = 'syncing';
     this.notify();
 
-    // Pull cloud data first (cloud wins over local if cloud has data)
+    // Pull cloud data first (cloud wins over local if user document exists in Firestore)
     const cloudData = await pullFromFirestore(this.currentUser.uid);
-    if (cloudData && cloudData.transactions) {
+    if (cloudData && (cloudData.accounts !== undefined || cloudData.transactions !== undefined || cloudData.settings !== undefined)) {
       db.save(cloudData);
     } else {
-      // First login — push local data to cloud
+      // First login / fresh account — initialize cloud document with current state
       await pushToFirestore(this.currentUser.uid, db.state);
     }
 

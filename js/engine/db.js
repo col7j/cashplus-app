@@ -354,8 +354,60 @@ class Database {
     this.save();
   }
 
+  // --- Category & Subcategory Management ---
+  addCategory(category) {
+    const newCat = {
+      id: 'cat-' + Date.now(),
+      name: category.name || 'تصنيف جديد',
+      emoji: category.emoji || '📁',
+      type: category.type || 'expense', // 'expense' | 'income'
+      color: category.color || '#6366F1',
+      subcategories: Array.isArray(category.subcategories) ? category.subcategories : []
+    };
+    this.state.categories = this.state.categories || [];
+    this.state.categories.push(newCat);
+    this.save();
+    return newCat;
+  }
+
+  updateCategory(id, updates) {
+    this.state.categories = this.state.categories || [];
+    const idx = this.state.categories.findIndex(c => c.id === id);
+    if (idx !== -1) {
+      this.state.categories[idx] = { ...this.state.categories[idx], ...updates };
+      this.save();
+      return this.state.categories[idx];
+    }
+    return null;
+  }
+
+  deleteCategory(id) {
+    this.state.categories = (this.state.categories || []).filter(c => c.id !== id);
+    this.save();
+  }
+
+  addSubcategory(categoryId, subName) {
+    const cat = (this.state.categories || []).find(c => c.id === categoryId);
+    if (cat && subName && subName.trim()) {
+      cat.subcategories = cat.subcategories || [];
+      if (!cat.subcategories.includes(subName.trim())) {
+        cat.subcategories.push(subName.trim());
+        this.save();
+      }
+    }
+  }
+
+  deleteSubcategory(categoryId, subName) {
+    const cat = (this.state.categories || []).find(c => c.id === categoryId);
+    if (cat && cat.subcategories) {
+      cat.subcategories = cat.subcategories.filter(s => s !== subName);
+      this.save();
+    }
+  }
+
   // --- Budgets ---
   setBudget(categoryId, limit, month = '2026-08') {
+    this.state.budgets = this.state.budgets || [];
     let budget = this.state.budgets.find(b => b.categoryId === categoryId && b.month === month);
     if (budget) {
       budget.limit = Number(limit) || 0;

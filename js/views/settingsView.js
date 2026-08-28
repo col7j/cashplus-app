@@ -94,7 +94,22 @@ export class SettingsView {
                   <input type="text" id="set-profile-role" class="form-input"
                     placeholder="مثال: موظف، مستقل، رائد أعمال..." value="${profile.role || ''}">
                 </div>
-                <button class="btn btn-primary btn-sm" id="btn-save-profile">حفظ الملف الشخصي</button>
+                <button class="btn btn-primary btn-sm" id="btn-save-profile">حفظ الملف الشخصي والمزامنة</button>
+              </div>
+
+              <!-- Categories Management Card -->
+              <div class="surface">
+                <div style="margin-bottom: var(--space-md);">
+                  <p style="font-size: 0.75rem; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.04em;">التصنيفات</p>
+                  <h3 style="font-size: 1.05rem; font-weight: 700;">إدارة وتخصيص التصنيفات</h3>
+                </div>
+
+                <p style="font-size: 0.8125rem; color: var(--text-secondary); margin-bottom: var(--space-md); line-height: 1.5;">
+                  أضف تصنيفات جديدة للدخل والمصاريف أو أضف أقساماً فرعية مخصصة حسب احتياجك.
+                </p>
+                <button class="btn btn-glass" id="btn-settings-manage-categories" style="width: 100%;">
+                  🏷️ إدارة التصنيفات والأقسام الفرعية
+                </button>
               </div>
 
               <!-- Data Management -->
@@ -251,7 +266,13 @@ export class SettingsView {
         const role = container.querySelector('#set-profile-role')?.value?.trim();
         db.state.settings.userProfile = { name, role };
         db.save();
-        window.app.showToast('تم حفظ الملف الشخصي ✓');
+        cloudAuth.triggerCloudSync();
+        window.app.showToast('تم حفظ وتحديث الملف الشخصي سحابياً ✓');
+      });
+
+      // Manage Categories
+      container.querySelector('#btn-settings-manage-categories')?.addEventListener('click', () => {
+        window.app.openCategoryManagerModal();
       });
 
       // Save financial settings

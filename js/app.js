@@ -220,7 +220,11 @@ class App {
     });
 
     document.getElementById('header-cloud-status')?.addEventListener('click', () => {
-      this.openAuthModal();
+      if (cloudAuth.currentUser) {
+        this.openProfileModal();
+      } else {
+        this.openAuthModal();
+      }
     });
 
     document.getElementById('pwa-btn-install')?.addEventListener('click', async () => {
@@ -574,18 +578,280 @@ class App {
     this.bindModalCloseEvents(modalContent, modalBackdrop);
   }
 
-  // 2. Manual Transaction Modal
+  // 0.1 Profile & Cloud Status Modal (When User Is Already Logged In)
+  openProfileModal() {
+    const modalBackdrop = document.getElementById('global-modal-backdrop');
+    const modalContent  = document.getElementById('global-modal-content');
+    if (!modalBackdrop || !modalContent) return;
+
+    const user = cloudAuth.currentUser;
+    if (!user) {
+      this.openAuthModal();
+      return;
+    }
+
+    modalContent.innerHTML = `
+      <div class="modal-sheet animate-fade-in" style="max-width: 440px;">
+        <div class="modal-header">
+          <div style="display:flex;align-items:center;gap:var(--space-xs);">
+            <span style="font-size:1.25rem;">👤</span>
+            <h3>الحساب السحابي المتصل</h3>
+          </div>
+          <button class="btn btn-glass btn-icon btn-sm" id="modal-close-btn">${Icons.close}</button>
+        </div>
+
+        <div class="modal-body" style="text-align: center;">
+          <div style="width: 72px; height: 72px; border-radius: 50%; margin: 0 auto var(--space-md) auto; overflow: hidden; border: 3px solid var(--success); box-shadow: var(--shadow-md);">
+            <img src="${user.photoURL}" style="width:100%;height:100%;object-fit:cover;">
+          </div>
+          
+          <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 4px;">${user.displayName}</h3>
+          <p style="font-size: 0.8125rem; color: var(--text-tertiary); margin-bottom: var(--space-md);">${user.email}</p>
+
+          <div style="background: var(--success-surface); border: 1px solid var(--success-border); padding: var(--space-sm) var(--space-md); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-lg);">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span class="sync-dot synced"></span>
+              <span style="font-size: 0.8125rem; font-weight: 600; color: var(--success-text);">قاعدة بيانات Firestore نشطة</span>
+            </div>
+            <span class="badge badge-success">متزامن ☁️</span>
+          </div>
+
+          <p style="font-size: 0.75rem; color: var(--text-tertiary); margin-bottom: var(--space-lg); line-height: 1.5;">
+            🔒 بياناتك المالية مشفرة ومحفوظة على سحابة Google Firebase. عند تسجيل الخروج، تُمسح البيانات من هذا الجهاز للحفاظ على خصوصيتك.
+          </p>
+
+          <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
+            <button class="btn btn-glass" id="btn-modal-logout" style="width: 100%; color: var(--danger-text); border-color: var(--danger-border); padding: 0.75rem;">
+              تسجيل الخروج من هذا الجهاز
+            </button>
+            <button class="btn btn-subtle" id="modal-cancel-btn" style="width: 100%;">
+              إغلاق
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    modalBackdrop.classList.add('open');
+
+    modalContent.querySelector('#btn-modal-logout')?.addEventListener('click', async () => {
+      await cloudAuth.signOut();
+      this.closeModal();
+      this.showToast('تم تسجيل الخروج ومسح البيانات من هذا الجهاز للخصوصية 🔒');
+    });
+
+    this.bindModalCloseEvents(modalContent, modalBackdrop);
+  }
+
+  // 0.2 Set Budget Limit Modal (Custom Sheet replacing prompt)
+  openSetBudgetModal(categoryId, currentLimit = 0, month = '2026-08') {
+    const modalBackdrop = document.getElementById('global-modal-backdrop');
+    const modalContent  = document.getElementById('global-modal-content');
+    if (!modalBackdrop || !modalContent) return;
+
+    const cat = (db.state.categories || []).find(c => c.id === categoryId) || { name: 'الميزانية', emoji: '🎯' };
+
+    modalContent.innerHTML = `
+      <div class="modal-sheet animate-fade-in" style="max-width: 420px;">
+        <div class="modal-header">
+          <div style="display:flex;align-items:center;gap:var(--space-xs);">
+            <span style="font-size:1.3rem;">${cat.emoji}</span>
+            <h3>تحديد سقف ميزانية ${cat.name}</h3>
+          </div>
+          <button class="btn btn-glass btn-icon btn-sm" id="modal-close-btn">${Icons.close}</button>
+        </div>
+
+        <div class="modal-body">
+          <p style="font-size: 0.8125rem; color: var(--text-secondary); margin-bottom: var(--space-lg); line-height: 1.5;">
+            حدد الحد الأقصى للمصروف المسموح به في بند <strong>${cat.name}</strong> لشهر <strong>${month}</strong>:
+          </p>
+
+          <div class="form-group">
+            <label class="form-label">سقف الميزانية الشهري (ريال):</label>
+            <input type="number" id="budget-input-limit" class="form-input"
+                   placeholder="0" value="${currentLimit || ''}" min="0" step="any"
+                   style="font-size: 1.25rem; font-weight: 700; padding: 0.75rem;">
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-subtle" id="modal-cancel-btn">إلغاء</button>
+          <button class="btn btn-primary" id="btn-save-budget-modal">
+            ${Icons.check}
+            حفظ السقف المالي
+          </button>
+        </div>
+      </div>
+    `;
+
+    modalBackdrop.classList.add('open');
+
+    modalContent.querySelector('#btn-save-budget-modal')?.addEventListener('click', () => {
+      const val = Number(modalContent.querySelector('#budget-input-limit').value);
+      if (isNaN(val) || val < 0) {
+        alert('يرجى إدخال مبلغ صحيح.');
+        return;
+      }
+      db.setBudget(categoryId, val, month);
+      this.closeModal();
+      this.showToast(`تم ضبط ميزانية ${cat.name} بمبلغ ${val.toLocaleString('en-US')} ريال 🎯`);
+    });
+
+    this.bindModalCloseEvents(modalContent, modalBackdrop);
+    setTimeout(() => modalContent.querySelector('#budget-input-limit')?.focus(), 100);
+  }
+
+  // 0.3 Categories Manager Modal
+  openCategoryManagerModal(defaultType = 'expense') {
+    const modalBackdrop = document.getElementById('global-modal-backdrop');
+    const modalContent  = document.getElementById('global-modal-content');
+    if (!modalBackdrop || !modalContent) return;
+
+    let activeType = defaultType;
+
+    const renderManager = () => {
+      const categories = (db.state.categories || []).filter(c => c.type === activeType);
+
+      modalContent.innerHTML = `
+        <div class="modal-sheet animate-fade-in" style="max-width: 540px;">
+          <div class="modal-header">
+            <div style="display:flex;align-items:center;gap:var(--space-xs);">
+              <span style="font-size:1.25rem;">🏷️</span>
+              <h3>إدارة وتخصيص التصنيفات</h3>
+            </div>
+            <button class="btn btn-glass btn-icon btn-sm" id="modal-close-btn">${Icons.close}</button>
+          </div>
+
+          <div class="modal-body">
+            <!-- Type Tabs -->
+            <div class="segmented-control" id="cat-mgr-type" style="width: 100%; display: flex; margin-bottom: var(--space-md);">
+              <button type="button" class="segmented-btn ${activeType === 'expense' ? 'active' : ''}" data-type="expense" style="flex: 1;">تصنيفات المصاريف 📤</button>
+              <button type="button" class="segmented-btn ${activeType === 'income' ? 'active' : ''}" data-type="income" style="flex: 1;">تصنيفات الدخل 📥</button>
+            </div>
+
+            <!-- Add New Category Form -->
+            <div style="background: var(--bg-surface-secondary); padding: var(--space-md); border-radius: var(--radius-md); border: 1px solid var(--border-subtle); margin-bottom: var(--space-lg);">
+              <p style="font-size: 0.8125rem; font-weight: 700; margin-bottom: var(--space-xs);">+ إضافة تصنيف رئيسي جديد</p>
+              <div style="display: flex; gap: var(--space-xs); flex-wrap: wrap;">
+                <input type="text" id="new-cat-emoji" class="form-input" placeholder="🎨" style="width: 50px; text-align: center; font-size: 1.1rem;" maxlength="2" value="📌">
+                <input type="text" id="new-cat-name" class="form-input" placeholder="اسم التصنيف (مثال: قهوة، سفر، صيانة...)" style="flex: 1; min-width: 160px;">
+                <button class="btn btn-primary btn-sm" id="btn-add-new-cat">إضافة</button>
+              </div>
+            </div>
+
+            <!-- Existing Categories List -->
+            <div style="display: flex; flex-direction: column; gap: var(--space-sm); max-height: 360px; overflow-y: auto;">
+              ${categories.map(cat => `
+                <div style="background: var(--bg-surface); padding: var(--space-sm) var(--space-md); border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="font-size: 1.25rem;">${cat.emoji}</span>
+                      <strong style="font-size: 0.9375rem;">${cat.name}</strong>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <button class="btn btn-glass btn-sm btn-add-subcat" data-cat-id="${cat.id}" style="padding: 2px 8px; font-size: 0.75rem;">+ قسم فرعي</button>
+                      <button class="btn btn-glass btn-icon btn-sm btn-del-cat" data-cat-id="${cat.id}" style="color: var(--danger);" title="حذف التصنيف">${Icons.trash}</button>
+                    </div>
+                  </div>
+
+                  <!-- Subcategories Badges -->
+                  <div style="display: flex; flex-wrap: wrap; gap: 4px; padding-right: 28px;">
+                    ${(cat.subcategories || []).map(sub => `
+                      <span style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; background: var(--bg-surface-secondary); border-radius: var(--radius-full); font-size: 0.75rem; color: var(--text-secondary); border: 1px solid var(--border-subtle);">
+                        <span>${sub}</span>
+                        <span class="btn-del-subcat" data-cat-id="${cat.id}" data-sub-name="${sub}" style="cursor: pointer; color: var(--text-tertiary); font-weight: bold; margin-right: 2px;">×</span>
+                      </span>
+                    `).join('')}
+                    ${(!cat.subcategories || cat.subcategories.length === 0) ? `<span style="font-size: 0.7rem; color: var(--text-tertiary);">لا توجد أقسام فرعية</span>` : ''}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn btn-primary" id="modal-cancel-btn" style="width: 100%;">تم</button>
+          </div>
+        </div>
+      `;
+
+      // Event Listeners
+      modalContent.querySelectorAll('#cat-mgr-type .segmented-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          activeType = btn.getAttribute('data-type');
+          renderManager();
+        });
+      });
+
+      // Add category
+      modalContent.querySelector('#btn-add-new-cat')?.addEventListener('click', () => {
+        const name = modalContent.querySelector('#new-cat-name')?.value?.trim();
+        const emoji = modalContent.querySelector('#new-cat-emoji')?.value?.trim() || '📌';
+        if (!name) {
+          alert('يرجى كتابة اسم التصنيف.');
+          return;
+        }
+        db.addCategory({ name, emoji, type: activeType });
+        renderManager();
+        this.showToast('تمت إضافة التصنيف بنجاح ✅');
+      });
+
+      // Add subcategory
+      modalContent.querySelectorAll('.btn-add-subcat').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const catId = btn.getAttribute('data-cat-id');
+          const subName = prompt('اكتب اسم القسم الفرعي الجديد:');
+          if (subName && subName.trim()) {
+            db.addSubcategory(catId, subName.trim());
+            renderManager();
+            this.showToast('تمت إضافة القسم الفرعي ✅');
+          }
+        });
+      });
+
+      // Delete subcategory
+      modalContent.querySelectorAll('.btn-del-subcat').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const catId = btn.getAttribute('data-cat-id');
+          const subName = btn.getAttribute('data-sub-name');
+          db.deleteSubcategory(catId, subName);
+          renderManager();
+        });
+      });
+
+      // Delete category
+      modalContent.querySelectorAll('.btn-del-cat').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const catId = btn.getAttribute('data-cat-id');
+          if (confirm('هل أنت متأكد من حذف هذا التصنيف؟')) {
+            db.deleteCategory(catId);
+            renderManager();
+            this.showToast('تم حذف التصنيف');
+          }
+        });
+      });
+
+      this.bindModalCloseEvents(modalContent, modalBackdrop);
+    };
+
+    renderManager();
+    modalBackdrop.classList.add('open');
+  }
+
+  // 2. Manual Transaction Modal (With Strict Expense/Income Category Separation)
   openTransactionModal(prefill = {}) {
     const modalBackdrop = document.getElementById('global-modal-backdrop');
     const modalContent = document.getElementById('global-modal-content');
     if (!modalBackdrop || !modalContent) return;
+
+    let selectedType = prefill.type || 'expense';
 
     modalContent.innerHTML = `
       <div class="modal-sheet animate-fade-in">
         <div class="modal-header">
           <div style="display: flex; align-items: center; gap: var(--space-xs);">
             <span style="font-size: 1.25rem;">✍️</span>
-            <h3>تسجيل عملية مالية جديدة</h3>
+            <h3>تسجيل عملية مالية</h3>
           </div>
           <button class="btn btn-glass btn-icon btn-sm" id="modal-close-btn">${Icons.close}</button>
         </div>
@@ -594,16 +860,16 @@ class App {
           <div class="form-group">
             <label class="form-label">نوع الحركة المالية:</label>
             <div class="segmented-control" id="form-txn-type" style="width: 100%; display: flex;">
-              <button type="button" class="segmented-btn ${(!prefill.type || prefill.type === 'expense') ? 'active' : ''}" data-type="expense" style="flex: 1;">مصروف 📤</button>
-              <button type="button" class="segmented-btn ${prefill.type === 'income' ? 'active' : ''}" data-type="income" style="flex: 1;">دخل وارد 📥</button>
-              <button type="button" class="segmented-btn ${prefill.type === 'transfer' ? 'active' : ''}" data-type="transfer" style="flex: 1;">تحويل 🔁</button>
+              <button type="button" class="segmented-btn ${selectedType === 'expense' ? 'active' : ''}" data-type="expense" style="flex: 1;">مصروف 📤</button>
+              <button type="button" class="segmented-btn ${selectedType === 'income' ? 'active' : ''}" data-type="income" style="flex: 1;">دخل وارد 📥</button>
+              <button type="button" class="segmented-btn ${selectedType === 'transfer' ? 'active' : ''}" data-type="transfer" style="flex: 1;">تحويل 🔁</button>
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label">المبلغ:</label>
-              <input type="number" id="txn-form-amount" class="form-input" placeholder="0.00" value="${prefill.amount || ''}" step="any" required>
+              <label class="form-label">المبلغ (ريال):</label>
+              <input type="number" id="txn-form-amount" class="form-input" placeholder="0.00" value="${prefill.amount || ''}" step="any" required autofocus style="font-size: 1.15rem; font-weight: 700;">
             </div>
             <div class="form-group">
               <label class="form-label">الرسوم البنكية (إن وجدت):</label>
@@ -612,15 +878,15 @@ class App {
           </div>
 
           <div class="form-group" id="group-merchant">
-            <label class="form-label">اسم التاجر / الجهة المستفيدة / المصدر:</label>
-            <input type="text" id="txn-form-merchant" class="form-input" placeholder="مثال: أسواق التميمي، ساسكو، سداد إيجار..." value="${prefill.merchant || ''}">
+            <label class="form-label" id="label-merchant">اسم التاجر / المتجر / المستفيد:</label>
+            <input type="text" id="txn-form-merchant" class="form-input" placeholder="مثال: أسواق بنده، ساسكو، راتب شهري..." value="${prefill.merchant || ''}">
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label class="form-label" id="label-from-acc">من حساب / محفظة:</label>
               <select id="txn-form-from-acc" class="form-select">
-                ${db.state.accounts.map(a => `<option value="${a.id}">🏦 ${a.name}</option>`).join('')}
+                ${(db.state.accounts || []).map(a => `<option value="${a.id}">🏦 ${a.name}</option>`).join('')}
                 <option value="cash">💵 النقدية في اليد (كاش)</option>
               </select>
             </div>
@@ -628,17 +894,26 @@ class App {
             <div class="form-group" id="group-to-acc" style="display: none;">
               <label class="form-label">إلى حساب / محفظة:</label>
               <select id="txn-form-to-acc" class="form-select">
-                ${db.state.accounts.map(a => `<option value="${a.id}">🏦 ${a.name}</option>`).join('')}
+                ${(db.state.accounts || []).map(a => `<option value="${a.id}">🏦 ${a.name}</option>`).join('')}
                 <option value="cash">💵 النقدية في اليد (كاش)</option>
               </select>
             </div>
 
             <div class="form-group" id="group-category">
-              <label class="form-label">التصنيف:</label>
-              <select id="txn-form-cat" class="form-select">
-                ${db.state.categories.map(c => `<option value="${c.id}" ${c.id === prefill.categoryId ? 'selected' : ''}>${c.emoji} ${c.name}</option>`).join('')}
-              </select>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2xs);">
+                <label class="form-label" style="margin-bottom: 0;">التصنيف:</label>
+                <button type="button" id="btn-modal-manage-cats" style="background: none; border: none; color: var(--primary); font-size: 0.75rem; font-weight: 700; cursor: pointer;">+ تعديل التصنيفات</button>
+              </div>
+              <select id="txn-form-cat" class="form-select"></select>
             </div>
+          </div>
+
+          <!-- Dynamic Subcategory Row -->
+          <div class="form-group" id="group-subcategory">
+            <label class="form-label">القسم الفرعي (اختياري):</label>
+            <select id="txn-form-subcat" class="form-select">
+              <option value="">بدون قسم فرعي</option>
+            </select>
           </div>
 
           <div class="form-row">
@@ -652,8 +927,8 @@ class App {
             </div>
           </div>
 
-          <div class="form-group" style="margin-top: var(--space-xs);">
-            <label style="display: flex; align-items: center; gap: var(--space-xs); font-size: 0.875rem; cursor: pointer;">
+          <div class="form-group" id="group-for-other">
+            <label style="display: flex; align-items: center; gap: var(--space-xs); font-size: 0.8125rem; cursor: pointer;">
               <input type="checkbox" id="txn-form-for-other">
               <span>هذا المبلغ <strong>مخصص لشخص آخر</strong> (أمانة/وساطة - لا يُحسب كدخل شخصي)</span>
             </label>
@@ -667,7 +942,7 @@ class App {
 
         <div class="modal-footer">
           <button class="btn btn-subtle" id="modal-cancel-btn">إلغاء</button>
-          <button class="btn btn-emerald" id="btn-save-manual-txn">
+          <button class="btn btn-primary" id="btn-save-manual-txn">
             ${Icons.check}
             حفظ العملية
           </button>
@@ -677,27 +952,73 @@ class App {
 
     modalBackdrop.classList.add('open');
 
-    let selectedType = prefill.type || 'expense';
+    // Populate category dropdown strictly filtered by type (Expense vs Income)
+    const updateCategoryDropdown = () => {
+      const catSelect = modalContent.querySelector('#txn-form-cat');
+      if (!catSelect) return;
+
+      const filtered = (db.state.categories || []).filter(c => c.type === selectedType);
+      
+      if (filtered.length === 0) {
+        catSelect.innerHTML = `<option value="">لا توجد تصنيفات لهذا النوع</option>`;
+      } else {
+        catSelect.innerHTML = filtered.map(c => 
+          `<option value="${c.id}" ${c.id === prefill.categoryId ? 'selected' : ''}>${c.emoji} ${c.name}</option>`
+        ).join('');
+      }
+
+      updateSubcategoryDropdown();
+    };
+
+    // Populate subcategories for chosen category
+    const updateSubcategoryDropdown = () => {
+      const catSelect = modalContent.querySelector('#txn-form-cat');
+      const subcatSelect = modalContent.querySelector('#txn-form-subcat');
+      if (!catSelect || !subcatSelect) return;
+
+      const currentCatId = catSelect.value;
+      const cat = (db.state.categories || []).find(c => c.id === currentCatId);
+
+      if (cat && cat.subcategories && cat.subcategories.length > 0) {
+        subcatSelect.innerHTML = `
+          <option value="">بدون قسم فرعي</option>
+          ${cat.subcategories.map(s => `<option value="${s}" ${s === prefill.subCategory ? 'selected' : ''}>${s}</option>`).join('')}
+        `;
+      } else {
+        subcatSelect.innerHTML = `<option value="">بدون قسم فرعي</option>`;
+      }
+    };
 
     const updateTypeUI = (type) => {
       selectedType = type;
       const groupToAcc = modalContent.querySelector('#group-to-acc');
       const groupCategory = modalContent.querySelector('#group-category');
+      const groupSubcategory = modalContent.querySelector('#group-subcategory');
+      const groupForOther = modalContent.querySelector('#group-for-other');
       const labelFrom = modalContent.querySelector('#label-from-acc');
+      const labelMerchant = modalContent.querySelector('#label-merchant');
 
       if (type === 'transfer') {
         if (groupToAcc) groupToAcc.style.display = 'block';
         if (groupCategory) groupCategory.style.display = 'none';
+        if (groupSubcategory) groupSubcategory.style.display = 'none';
+        if (groupForOther) groupForOther.style.display = 'none';
         if (labelFrom) labelFrom.textContent = 'من حساب:';
+        if (labelMerchant) labelMerchant.textContent = 'ملاحظة التحويل:';
       } else {
         if (groupToAcc) groupToAcc.style.display = 'none';
         if (groupCategory) groupCategory.style.display = 'block';
+        if (groupSubcategory) groupSubcategory.style.display = 'block';
+        if (groupForOther) groupForOther.style.display = type === 'income' ? 'block' : 'none';
         if (labelFrom) labelFrom.textContent = type === 'income' ? 'إيداع في حساب:' : 'من حساب / محفظة:';
+        if (labelMerchant) labelMerchant.textContent = type === 'income' ? 'مصدر الدخل / جهة التحويل:' : 'اسم التاجر / المتجر / المستفيد:';
+        updateCategoryDropdown();
       }
     };
 
     updateTypeUI(selectedType);
 
+    // Change Type Event
     modalContent.querySelectorAll('#form-txn-type .segmented-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         modalContent.querySelectorAll('#form-txn-type .segmented-btn').forEach(b => b.classList.remove('active'));
@@ -706,6 +1027,17 @@ class App {
       });
     });
 
+    // Category Change -> Update Subcategories
+    modalContent.querySelector('#txn-form-cat')?.addEventListener('change', () => {
+      updateSubcategoryDropdown();
+    });
+
+    // Manage Categories Link inside Modal
+    modalContent.querySelector('#btn-modal-manage-cats')?.addEventListener('click', () => {
+      this.openCategoryManagerModal(selectedType);
+    });
+
+    // Submit Transaction
     modalContent.querySelector('#btn-save-manual-txn').addEventListener('click', () => {
       const amount = Number(modalContent.querySelector('#txn-form-amount').value);
       const fee = Number(modalContent.querySelector('#txn-form-fee').value) || 0;
@@ -713,12 +1045,13 @@ class App {
       const accountId = modalContent.querySelector('#txn-form-from-acc').value;
       const toAccountId = selectedType === 'transfer' ? modalContent.querySelector('#txn-form-to-acc').value : null;
       const categoryId = selectedType !== 'transfer' ? modalContent.querySelector('#txn-form-cat').value : null;
+      const subCategory = selectedType !== 'transfer' ? modalContent.querySelector('#txn-form-subcat').value : null;
       const date = modalContent.querySelector('#txn-form-date').value;
       const time = modalContent.querySelector('#txn-form-time').value;
-      const isForSomeoneElse = modalContent.querySelector('#txn-form-for-other').checked;
+      const isForSomeoneElse = modalContent.querySelector('#txn-form-for-other')?.checked || false;
       const description = modalContent.querySelector('#txn-form-desc').value;
 
-      if (!amount || isNaN(amount)) {
+      if (!amount || isNaN(amount) || amount <= 0) {
         alert('يرجى كتابة مبلغ صحيح للعملية.');
         return;
       }
@@ -731,6 +1064,7 @@ class App {
         accountId,
         toAccountId,
         categoryId,
+        subCategory,
         date,
         time,
         isForSomeoneElse,

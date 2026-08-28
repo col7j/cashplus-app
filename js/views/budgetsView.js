@@ -138,13 +138,8 @@ export class BudgetsView {
       container.querySelectorAll('.edit-limit-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const catId = btn.getAttribute('data-cat-id');
-          const currentLimit = btn.getAttribute('data-current-limit');
-          const newLimit = prompt('أدخل السقف المالي الجديد لهذه الميزانية (ريال):', currentLimit);
-          if (newLimit !== null && !isNaN(Number(newLimit))) {
-            db.setBudget(catId, Number(newLimit), selectedMonth);
-            renderContent();
-            window.app.showToast('تم تحديث الميزانية بنجاح! 🎯');
-          }
+          const currentLimit = Number(btn.getAttribute('data-current-limit')) || 0;
+          window.app.openSetBudgetModal(catId, currentLimit, selectedMonth);
         });
       });
     }
