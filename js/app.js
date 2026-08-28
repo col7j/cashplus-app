@@ -19,6 +19,7 @@ import { DebtsView } from './views/debtsView.js';
 import { PurchasesView } from './views/purchasesView.js';
 import { AnalyticsView } from './views/analyticsView.js';
 import { SettingsView } from './views/settingsView.js';
+import { LandingView } from './views/landingView.js';
 
 class App {
   constructor() {
@@ -188,7 +189,37 @@ class App {
   }
 
   renderCurrentView() {
+    const user = cloudAuth.currentUser;
+    const sidebar = document.querySelector('.sidebar');
+    const header = document.querySelector('.app-header');
+    const mobileNav = document.querySelector('.mobile-bottom-nav');
+    const mainWrapper = document.querySelector('.main-wrapper');
     const mainContent = document.getElementById('main-view-container');
+
+    if (!user) {
+      // User is not logged in -> Show Landing / Gateway View
+      if (sidebar) sidebar.style.display = 'none';
+      if (header) header.style.display = 'none';
+      if (mobileNav) mobileNav.style.display = 'none';
+      if (mainWrapper) {
+        mainWrapper.style.marginRight = '0';
+        mainWrapper.style.padding = '0';
+      }
+      if (mainContent) {
+        LandingView.render(mainContent);
+      }
+      return;
+    }
+
+    // User is logged in -> Restore standard app interface
+    if (sidebar) sidebar.style.display = '';
+    if (header) header.style.display = '';
+    if (mobileNav) mobileNav.style.display = '';
+    if (mainWrapper) {
+      mainWrapper.style.marginRight = '';
+      mainWrapper.style.padding = '';
+    }
+
     if (mainContent && this.views[this.currentView]) {
       this.views[this.currentView].render(mainContent);
     }
@@ -199,10 +230,20 @@ class App {
     const syncStatus = cloudAuth.syncStatus;
     const headerPill = document.getElementById('header-cloud-status');
     if (headerPill) {
-      headerPill.innerHTML = `
-        <span class="sync-dot ${syncStatus}"></span>
-        <span>${user ? user.displayName : 'سحابي (تسجيل)'}</span>
-      `;
+      if (user) {
+        const avatarImg = user.photoURL 
+          ? `<img src="${user.photoURL}" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover;" alt="Avatar">`
+          : `<span class="sync-dot ${syncStatus}"></span>`;
+        headerPill.innerHTML = `
+          ${avatarImg}
+          <span>${user.displayName || user.email?.split('@')[0] || 'حسابي'}</span>
+        `;
+      } else {
+        headerPill.innerHTML = `
+          <span class="sync-dot offline"></span>
+          <span>تسجيل الدخول</span>
+        `;
+      }
     }
   }
 
@@ -246,19 +287,23 @@ class App {
   // --- MODALS & AUTHENTICATION ENGINE ---
 
   // 0. Cloud Auth Modal (Google & Firebase Login)
-  openAuthModal() {
+  openAuthModal(defaultMode = 'login') {
     const modalBackdrop = document.getElementById('global-modal-backdrop');
     const modalContent  = document.getElementById('global-modal-content');
     if (!modalBackdrop || !modalContent) return;
 
-    let authMode   = 'login';
+    let authMode   = defaultMode;
+    let selectedGender = 'none';
     let isLoading  = false;
 
     const renderAuth = () => {
       modalContent.innerHTML = `
         <div class="modal-sheet animate-fade-in" style="max-width: 440px;">
           <div class="modal-header">
-            <h3>☁️ ${authMode === 'login' ? 'تسجيل الدخول' : 'إنشاء حساب جديد'}</h3>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 1.25rem;">☁️</span>
+              <h3>${authMode === 'login' ? 'تسجيل الدخول' : 'إنشاء حساب جديد'}</h3>
+            </div>
             <button class="btn btn-glass btn-icon btn-sm" id="modal-close-btn">${Icons.close}</button>
           </div>
 
@@ -290,8 +335,17 @@ class App {
 
             ${authMode === 'signup' ? `
               <div class="form-group">
-                <label class="form-label">الاسم الكامل</label>
-                <input type="text" id="auth-name" class="form-input" placeholder="اسمك الكامل" autocomplete="name">
+                <label class="form-label">الاسم الكريم</label>
+                <input type="text" id="auth-name" class="form-input" placeholder="اسمك الكامل" autocomplete="name" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">الجنس / النوع (لتخصيص الأيقونة الشخصية):</label>
+                <div class="segmented-control" id="auth-gender-select" style="display: flex; width: 100%;">
+                  <button type="button" class="segmented-btn ${selectedGender === 'male' ? 'active' : ''}" data-gender="male" style="flex: 1;">👨 ذكر</button>
+                  <button type="button" class="segmented-btn ${selectedGender === 'female' ? 'active' : ''}" data-gender="female" style="flex: 1;">👩 أنثى</button>
+                  <button type="button" class="segmented-btn ${selectedGender === 'none' ? 'active' : ''}" data-gender="none" style="flex: 1;">🐧 غير محدد</button>
+                </div>
               </div>
             ` : ''}
 
@@ -345,7 +399,6 @@ class App {
       const showError = (msg) => {
         const errBox = modalContent.querySelector('#auth-error-box');
         if (!errBox) return;
-        // إذا كان الخطأ configuration-not-found → إرشادات Firebase Console
         if (msg.includes('configuration-not-found') || msg.includes('Configuration')) {
           errBox.innerHTML = `
             ⚠️ Firebase Authentication غير مفعّل بعد.<br>
@@ -372,6 +425,15 @@ class App {
           ? '⏳ جارٍ المعالجة...'
           : (authMode === 'login' ? 'تسجيل الدخول' : 'إنشاء الحساب');
       };
+
+      // Gender selection buttons
+      modalContent.querySelectorAll('#auth-gender-select .segmented-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          modalContent.querySelectorAll('#auth-gender-select .segmented-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          selectedGender = btn.getAttribute('data-gender');
+        });
+      });
 
       // Google sign-in
       modalContent.querySelector('#btn-auth-google')?.addEventListener('click', async () => {
@@ -400,14 +462,19 @@ class App {
           return;
         }
 
+        if (authMode === 'signup' && !name) {
+          showError('يرجى كتابة اسمك الكريم.');
+          return;
+        }
+
         setLoading(true);
         try {
           if (authMode === 'signup') {
-            await cloudAuth.signUpWithEmail(email, password, name);
-            this.showToast('تم إنشاء حسابك السحابي بنجاح! 🎉');
+            await cloudAuth.signUpWithEmail(email, password, name, selectedGender);
+            this.showToast(`أهلاً بك يا ${name}! تم إنشاء حسابك بنجاح 🎉`);
           } else {
             await cloudAuth.signInWithEmail(email, password);
-            this.showToast('مرحباً! تم تسجيل الدخول وربط السحابة ✅');
+            this.showToast('مرحباً بعودتك! تم تسجيل الدخول ومزامنة بياناتك ✅');
           }
           this.closeModal();
         } catch (err) {
@@ -431,8 +498,11 @@ class App {
 
       this.bindModalCloseEvents(modalContent, modalBackdrop);
 
-      // Focus email field
-      setTimeout(() => modalContent.querySelector('#auth-email')?.focus(), 100);
+      // Focus input field
+      setTimeout(() => {
+        const firstInput = modalContent.querySelector('#auth-name') || modalContent.querySelector('#auth-email');
+        firstInput?.focus();
+      }, 100);
     };
 
     renderAuth();

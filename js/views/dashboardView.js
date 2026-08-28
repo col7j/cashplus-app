@@ -37,7 +37,7 @@ export class DashboardView {
             ${new Date().toLocaleDateString('ar-SA', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
           </p>
           <h2 style="font-size: 1.75rem; font-weight: 800; letter-spacing: -0.025em; color: var(--text-primary);">
-            مرحباً، ${user ? user.displayName : db.state.settings.userProfile?.name || 'ضيف'} 👋
+            مرحباً، ${db.state.settings.userProfile?.name || (user ? user.displayName : 'مستخدم')} 👋
           </h2>
           <p style="font-size: 0.9375rem; color: var(--text-tertiary); margin-top: 2px;">
             هذه نظرة شاملة على وضعك المالي الكامل اليوم.

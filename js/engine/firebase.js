@@ -177,9 +177,14 @@ class CloudAuthManager {
     clearTimeout(this._syncThrottle);
     this._syncThrottle = setTimeout(async () => {
       await pushToFirestore(this.currentUser.uid, db.state);
+  async pushImmediate(state) {
+    if (!this.currentUser) return;
+    try {
+      await pushToFirestore(this.currentUser.uid, state);
       this.syncStatus = 'synced';
-      this.notify();
-    }, 1500);
+    } catch (err) {
+      console.error('[CashPlus] Firestore direct push error:', err);
+    }
   }
 
   // ── Public Auth Methods ──────────────────────────────────────────────────
@@ -188,7 +193,6 @@ class CloudAuthManager {
     this.notify();
     try {
       await signInWithPopup(auth, googleProvider);
-      // onAuthStateChanged handles the rest
     } catch (err) {
       this.syncStatus = this.currentUser ? 'synced' : 'offline';
       this.notify();
@@ -208,14 +212,34 @@ class CloudAuthManager {
     }
   }
 
-  async signUpWithEmail(email, password, displayName) {
+  async signUpWithEmail(email, password, displayName, gender = 'none') {
     this.syncStatus = 'syncing';
     this.notify();
     try {
       const cred = await createUserWithEmailAndPassword(auth, email, password);
-      if (displayName) {
-        await updateProfile(cred.user, { displayName });
+      
+      let photoURL = '';
+      if (gender === 'male') {
+        photoURL = `https://api.dicebear.com/7.x/notionists/svg?seed=Felix_${encodeURIComponent(displayName || email)}&backgroundColor=b6e3f4`;
+      } else if (gender === 'female') {
+        photoURL = `https://api.dicebear.com/7.x/notionists/svg?seed=Aneka_${encodeURIComponent(displayName || email)}&backgroundColor=ffdfbf`;
+      } else {
+        // Default Penguin avatar
+        photoURL = `https://api.dicebear.com/7.x/bottts/svg?seed=Penguin_${encodeURIComponent(displayName || email)}&backgroundColor=c0aede`;
       }
+
+      await updateProfile(cred.user, {
+        displayName: displayName || email.split('@')[0],
+        photoURL: photoURL
+      });
+
+      // Update state userProfile immediately
+      db.state.settings.userProfile = {
+        name: displayName || email.split('@')[0],
+        gender: gender,
+        role: ''
+      };
+      await pushToFirestore(cred.user.uid, db.state);
     } catch (err) {
       this.syncStatus = this.currentUser ? 'synced' : 'offline';
       this.notify();
