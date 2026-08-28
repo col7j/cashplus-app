@@ -385,3 +385,20 @@
   }
 }
 
+@media (max-width: 500px) {
+  .hide-on-mobile-sm {
+    display: none !important;
+  }
+  #landing-header {
+    padding: 0.5rem 0.75rem !important;
+  }
+  #nav-btn-signup {
+    padding: 0.45rem 0.85rem !important;
+    font-size: 0.8125rem !important;
+  }
+  #nav-btn-login {
+    padding: 0.45rem 0.75rem !important;
+    font-size: 0.8125rem !important;
+  }
+}
+
