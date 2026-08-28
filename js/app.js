@@ -277,6 +277,8 @@ class App {
         }
         this.deferredInstallPrompt = null;
       }
+    });
+
     document.getElementById('pwa-btn-dismiss')?.addEventListener('click', () => {
       document.getElementById('pwa-install-banner').style.display = 'none';
     });

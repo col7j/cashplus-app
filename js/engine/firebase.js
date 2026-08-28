@@ -51,6 +51,24 @@ const googleProvider = new GoogleAuthProvider();
 
 googleProvider.setCustomParameters({ prompt: 'select_account', hl: 'ar' });
 
+// ─── Live Avatar URL Generator (DiceBear SVGs) ────────────────────────────────
+export function generateAvatarUrl({ style = 'notionists', seed = 'User', bgColor = 'b6e3f4', gender = 'male' }) {
+  const cleanSeed = encodeURIComponent(seed || 'User');
+  if (style === 'bottts') {
+    return `https://api.dicebear.com/7.x/bottts/svg?seed=Penguin_${cleanSeed}&backgroundColor=${bgColor}`;
+  } else if (style === 'adventurer') {
+    return `https://api.dicebear.com/7.x/adventurer/svg?seed=${cleanSeed}&backgroundColor=${bgColor}`;
+  } else if (style === 'micah') {
+    return `https://api.dicebear.com/7.x/micah/svg?seed=${cleanSeed}&backgroundColor=${bgColor}`;
+  } else if (style === 'lorelei') {
+    return `https://api.dicebear.com/7.x/lorelei/svg?seed=${cleanSeed}&backgroundColor=${bgColor}`;
+  } else {
+    // notionists
+    const prefix = gender === 'female' ? 'Aneka_' : (gender === 'male' ? 'Felix_' : 'Alex_');
+    return `https://api.dicebear.com/7.x/notionists/svg?seed=${prefix}${cleanSeed}&backgroundColor=${bgColor}`;
+  }
+}
+
 // ─── Firestore Helpers (Dual Target for 100% Compatibility) ──────────────────
 function userPrimaryDoc(uid) {
   return doc(firestore, 'users', uid);
@@ -269,23 +287,6 @@ class CloudAuthManager {
       throw this._humanizeError(err);
     }
   }
-
-export function generateAvatarUrl({ style = 'notionists', seed = 'User', bgColor = 'b6e3f4', gender = 'male' }) {
-  const cleanSeed = encodeURIComponent(seed || 'User');
-  if (style === 'bottts') {
-    return `https://api.dicebear.com/7.x/bottts/svg?seed=Penguin_${cleanSeed}&backgroundColor=${bgColor}`;
-  } else if (style === 'adventurer') {
-    return `https://api.dicebear.com/7.x/adventurer/svg?seed=${cleanSeed}&backgroundColor=${bgColor}`;
-  } else if (style === 'micah') {
-    return `https://api.dicebear.com/7.x/micah/svg?seed=${cleanSeed}&backgroundColor=${bgColor}`;
-  } else if (style === 'lorelei') {
-    return `https://api.dicebear.com/7.x/lorelei/svg?seed=${cleanSeed}&backgroundColor=${bgColor}`;
-  } else {
-    // notionists
-    const prefix = gender === 'female' ? 'Aneka_' : (gender === 'male' ? 'Felix_' : 'Alex_');
-    return `https://api.dicebear.com/7.x/notionists/svg?seed=${prefix}${cleanSeed}&backgroundColor=${bgColor}`;
-  }
-}
 
   async signUpWithEmail(email, password, displayName, gender = 'male', bgColor = 'b6e3f4', avatarStyle = 'notionists', customPhotoURL = null) {
     this.syncStatus = 'syncing';
