@@ -1,15 +1,18 @@
-const CACHE_NAME = 'masar-finance-v1';
+const CACHE_NAME = 'cashplus-finance-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
+  './css/fonts.css',
   './css/design-system.css',
   './css/layout.css',
   './css/components.css',
   './css/animations.css',
+  './assets/logo-icon.svg',
   './js/app.js',
   './js/icons.js',
   './js/engine/db.js',
+  './js/engine/firebase.js',
   './js/engine/financialEngine.js',
   './js/engine/smsParser.js',
   './js/engine/insightsEngine.js',
