@@ -124,8 +124,9 @@ class CloudAuthManager {
 
   // ── Internal Auth Callbacks ──────────────────────────────────────────────
   async _onUserSignedIn(firebaseUser) {
+    const uid = firebaseUser.uid;
     this.currentUser = {
-      uid:         firebaseUser.uid,
+      uid:         uid,
       email:       firebaseUser.email,
       displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'مستخدم',
       photoURL:    firebaseUser.photoURL || `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(firebaseUser.email)}`,
@@ -135,17 +136,20 @@ class CloudAuthManager {
     this.syncStatus = 'syncing';
     this.notify();
 
-    // Pull cloud data first (cloud wins over local on any device upon login)
-    const cloudData = await pullFromFirestore(this.currentUser.uid);
-    if (cloudData && (cloudData.accounts !== undefined || cloudData.transactions !== undefined || cloudData.settings !== undefined)) {
-      // Load cloud data silently into memory and local storage
+    // 1. Switch DB to this user's private storage slot
+    db.switchUser(uid);
+
+    // 2. Pull cloud data from Firestore (cloud wins over local on any device upon login)
+    const cloudData = await pullFromFirestore(uid);
+    if (cloudData) {
+      // Cloud document exists -> load cloud data into memory and local storage
       db.saveQuiet(cloudData);
     } else {
       // First login / fresh account on cloud — push current local state to initialize cloud document
-      await pushToFirestore(this.currentUser.uid, db.state).catch(() => {});
+      await pushToFirestore(uid, db.state).catch(() => {});
     }
 
-    // Start real-time listener for this user's document across open devices/tabs
+    // 3. Start real-time listener for this user's document across open devices/tabs
     this._startRealtimeSync();
 
     this.syncStatus = 'synced';
@@ -164,8 +168,8 @@ class CloudAuthManager {
     this.currentUser = null;
     this.syncStatus  = 'offline';
 
-    // 4. Strict Privacy: clear all financial data from browser memory and localStorage WITHOUT pushing to cloud
-    db.resetToEmptyState(false);
+    // 4. Strict Privacy: switch to empty guest slot without pushing to cloud
+    db.switchUser(null);
     this.notify();
   }
 

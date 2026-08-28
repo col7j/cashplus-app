@@ -63,16 +63,38 @@ const DEFAULT_SEED_DATA = {
 };
 
 
+const STORAGE_PREFIX = 'cashplus_fin_';
+
 // Main Database Manager Class
 class Database {
   constructor() {
+    this.currentUid = null;
     this.state = this.load();
     this.listeners = [];
   }
 
+  getStorageKey() {
+    return this.currentUid ? (STORAGE_PREFIX + this.currentUid) : (STORAGE_PREFIX + 'guest');
+  }
+
+  switchUser(uid) {
+    this.currentUid = uid;
+    if (!uid) {
+      // Guest / Logged out: clean empty state for privacy
+      this.state = JSON.parse(JSON.stringify(DEFAULT_SEED_DATA));
+      try {
+        localStorage.setItem(this.getStorageKey(), JSON.stringify(this.state));
+      } catch (e) {}
+    } else {
+      // User signed in: load from this user's private local storage slot
+      this.state = this.load();
+    }
+  }
+
   load() {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const key = this.getStorageKey();
+      const stored = localStorage.getItem(key);
       if (stored) {
         const parsed = JSON.parse(stored);
         return { ...DEFAULT_SEED_DATA, ...parsed };
@@ -80,14 +102,13 @@ class Database {
     } catch (e) {
       console.warn('Could not load from localStorage, using default seed:', e);
     }
-    this.save(DEFAULT_SEED_DATA);
     return JSON.parse(JSON.stringify(DEFAULT_SEED_DATA));
   }
 
   save(data = this.state) {
     this.state = data;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
+      localStorage.setItem(this.getStorageKey(), JSON.stringify(this.state));
     } catch (e) {
       console.error('Failed to save to localStorage:', e);
     }
@@ -97,9 +118,9 @@ class Database {
   // Save from cloud without firing subscribers (prevents infinite sync loop)
   saveQuiet(data) {
     if (!data || typeof data !== 'object') return;
-    this.state = data;
+    this.state = { ...DEFAULT_SEED_DATA, ...data };
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
+      localStorage.setItem(this.getStorageKey(), JSON.stringify(this.state));
     } catch (e) {
       console.error('Failed to saveQuiet to localStorage:', e);
     }
