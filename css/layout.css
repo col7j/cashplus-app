@@ -334,6 +334,9 @@
   .sidebar {
     transform: translateX(100%);
     box-shadow: var(--shadow-lg);
+    width: min(85vw, 320px);
+    background: var(--bg-surface);
+    border-left: 1px solid var(--border-default);
   }
 
   .sidebar.mobile-open {
@@ -345,11 +348,15 @@
   }
 
   .app-header {
-    padding: calc(var(--sat) + 0.75rem) var(--space-md) 0.75rem var(--space-md);
+    padding: calc(var(--sat) + 0.6rem) var(--space-md) 0.6rem var(--space-md);
   }
 
   .page-content {
-    padding: var(--space-md);
+    padding: var(--space-md) var(--space-sm);
+  }
+
+  .dash-split-layout {
+    grid-template-columns: 1fr !important;
   }
 
   .mobile-bottom-nav {
@@ -365,3 +372,4 @@
     padding-bottom: var(--space-2xl);
   }
 }
+

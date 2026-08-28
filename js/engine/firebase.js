@@ -130,6 +130,8 @@ class CloudAuthManager {
     this._stopRealtimeSync();
     this.currentUser = null;
     this.syncStatus  = 'offline';
+    // Strict Privacy: clear all financial data from browser memory and localStorage
+    db.resetToEmptyState();
     this.notify();
   }
 

@@ -79,7 +79,14 @@ export class AccountsView {
 
           <!-- Accounts Cards Grid -->
           <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: var(--space-lg);">
-            ${db.state.accounts.map(acc => {
+            ${db.state.accounts.length === 0 ? `
+              <div class="surface" style="grid-column: 1 / -1; text-align: center; padding: 2.5rem var(--space-md);">
+                <div style="font-size: 2.5rem; margin-bottom: var(--space-xs);">🏦</div>
+                <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 6px;">لا توجد حسابات بنكية مضافة</h3>
+                <p style="font-size: 0.875rem; color: var(--text-tertiary); margin-bottom: var(--space-md);">أضف حساباتك الجارية ومحافظك لمتابعة أرصدتك والتحويلات بكل دقة.</p>
+                <button class="btn btn-primary btn-sm" id="acc-btn-empty-add">+ إضافة أول حساب بنكي</button>
+              </div>
+            ` : db.state.accounts.map(acc => {
               const bank = db.state.banks.find(b => b.id === acc.bankId) || { name: 'بنك عام', color: '#4F46E5' };
               const currentBalance = FinancialEngine.getAccountBalance(acc.id, db.state);
               const linkedCards = db.state.cards.filter(c => c.accountId === acc.id);
@@ -186,6 +193,10 @@ export class AccountsView {
 
       // Add Account
       container.querySelector('#acc-btn-add')?.addEventListener('click', () => {
+        window.app.openAddAccountModal();
+      });
+
+      container.querySelector('#acc-btn-empty-add')?.addEventListener('click', () => {
         window.app.openAddAccountModal();
       });
 

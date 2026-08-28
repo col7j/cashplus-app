@@ -1496,6 +1496,12 @@ class App {
 
 // Global App Instance
 window.app = new App();
-document.addEventListener('DOMContentLoaded', () => {
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    window.app.init();
+  });
+} else {
   window.app.init();
-});
+}
+

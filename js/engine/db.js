@@ -404,6 +404,16 @@ class Database {
   resetToDefault() {
     this.save(JSON.parse(JSON.stringify(DEFAULT_SEED_DATA)));
   }
+
+  resetToEmptyState() {
+    this.state = JSON.parse(JSON.stringify(DEFAULT_SEED_DATA));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
+    } catch (e) {
+      console.error('Failed to clear localStorage:', e);
+    }
+    this.notify();
+  }
 }
 
 export const db = new Database();

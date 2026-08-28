@@ -15,10 +15,11 @@ export class DashboardView {
     const savings        = FinancialEngine.getTotalSavings(db.state);
     const investments    = FinancialEngine.getTotalInvestments(db.state);
     const summary        = FinancialEngine.getMonthlySummary('2026-08', db.state);
-    const budgets        = FinancialEngine.getBudgetsStatus('2026-08', db.state);
-    const upcoming       = FinancialEngine.getUpcomingObligations(30, db.state);
-    const purchases      = db.state.purchases.filter(p => p.status === 'planned' || p.status === 'ready');
-    const insights       = InsightsEngine.generateInsights('2026-08', db.state);
+    const budgets        = FinancialEngine.getBudgetsStatus('2026-08', db.state) || [];
+    const upcoming       = FinancialEngine.getUpcomingObligations(30, db.state) || [];
+    const purchases      = (db.state.purchases || []).filter(p => p.status === 'planned' || p.status === 'ready');
+    const transactions   = db.state.transactions || [];
+    const insights       = InsightsEngine.generateInsights('2026-08', db.state) || [];
 
     const fmt = (n) => FinancialEngine.formatMoney(n);
     const user = cloudAuth.currentUser;
@@ -196,27 +197,33 @@ export class DashboardView {
                 <a href="#budgets" class="btn btn-glass btn-sm" style="text-decoration: none;">إدارة</a>
               </div>
 
-              <div style="display: flex; flex-direction: column; gap: var(--space-md);">
-                ${budgets.slice(0, 5).map(b => `
-                  <div>
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
-                      <div style="display: flex; align-items: center; gap: var(--space-xs);">
-                        <span style="font-size: 1rem;">${b.category.emoji}</span>
-                        <span style="font-size: 0.875rem; font-weight: 600; color: var(--text-primary);">${b.category.name}</span>
+              ${budgets.length === 0 ? `
+                <div style="padding: var(--space-md); text-align: center; color: var(--text-tertiary); font-size: 0.875rem;">
+                  لم تحدد سقوف ميزانية بعد.
+                </div>
+              ` : `
+                <div style="display: flex; flex-direction: column; gap: var(--space-md);">
+                  ${budgets.slice(0, 5).map(b => `
+                    <div>
+                      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
+                        <div style="display: flex; align-items: center; gap: var(--space-xs);">
+                          <span style="font-size: 1rem;">${b.category?.emoji || '📌'}</span>
+                          <span style="font-size: 0.875rem; font-weight: 600; color: var(--text-primary);">${b.category?.name || 'تصنيف'}</span>
+                        </div>
+                        <div style="font-size: 0.8125rem;">
+                          <span class="num" style="font-weight: 700;">${b.spent.toLocaleString('en-US')}</span>
+                          <span style="color: var(--text-tertiary);"> / <span class="num">${b.limit.toLocaleString('en-US')}</span> ريال</span>
+                          ${b.isOver ? '<span class="badge badge-danger" style="margin-right: 4px; font-size: 0.65rem;">تجاوز</span>' : ''}
+                        </div>
                       </div>
-                      <div style="font-size: 0.8125rem;">
-                        <span class="num" style="font-weight: 700;">${b.spent.toLocaleString('en-US')}</span>
-                        <span style="color: var(--text-tertiary);"> / <span class="num">${b.limit.toLocaleString('en-US')}</span> ريال</span>
-                        ${b.isOver ? '<span class="badge badge-danger" style="margin-right: 4px; font-size: 0.65rem;">تجاوز</span>' : ''}
+                      <div class="progress-bar-container">
+                        <div class="progress-bar-fill ${b.isOver ? 'progress-fill-danger' : b.percentage > 80 ? 'progress-fill-warning' : 'progress-fill-success'}"
+                             style="width: ${Math.min(100, b.percentage)}%;"></div>
                       </div>
                     </div>
-                    <div class="progress-bar-container">
-                      <div class="progress-bar-fill ${b.isOver ? 'progress-fill-danger' : b.percentage > 80 ? 'progress-fill-warning' : 'progress-fill-success'}"
-                           style="width: ${Math.min(100, b.percentage)}%;"></div>
-                    </div>
-                  </div>
-                `).join('')}
-              </div>
+                  `).join('')}
+                </div>
+              `}
             </div>
 
             <!-- Latest Transactions -->
@@ -229,40 +236,47 @@ export class DashboardView {
                 <a href="#transactions" class="btn btn-glass btn-sm" style="text-decoration: none;">عرض الكل</a>
               </div>
 
-              <div class="transaction-list">
-                ${db.state.transactions.slice(0, 6).map(txn => {
-                  const isExp = txn.type === 'expense';
-                  const isInc = txn.type === 'income';
-                  const cat   = db.state.categories?.find(c => c.id === txn.categoryId);
-                  const acc   = db.state.accounts?.find(a => a.id === txn.accountId);
+              ${transactions.length === 0 ? `
+                <div style="padding: var(--space-lg) var(--space-md); text-align: center; color: var(--text-tertiary);">
+                  <p style="font-size: 0.9375rem; margin-bottom: var(--space-sm);">لا توجد حركات مسجلة بعد.</p>
+                  <button class="btn btn-primary btn-sm btn-global-quick-add" style="margin: 0 auto;">+ سجّل أول عملية</button>
+                </div>
+              ` : `
+                <div class="transaction-list">
+                  ${transactions.slice(0, 6).map(txn => {
+                    const isExp = txn.type === 'expense';
+                    const isInc = txn.type === 'income';
+                    const cat   = db.state.categories?.find(c => c.id === txn.categoryId);
+                    const acc   = db.state.accounts?.find(a => a.id === txn.accountId);
 
-                  return `
-                    <div class="transaction-item" data-id="${txn.id}">
-                      <div class="txn-left-info">
-                        <div class="txn-icon-wrapper ${isExp ? 'txn-icon-expense' : isInc ? 'txn-icon-income' : 'txn-icon-transfer'}">
-                          ${cat ? cat.emoji : (isInc ? '↓' : '↑')}
+                    return `
+                      <div class="transaction-item" data-id="${txn.id}">
+                        <div class="txn-left-info">
+                          <div class="txn-icon-wrapper ${isExp ? 'txn-icon-expense' : isInc ? 'txn-icon-income' : 'txn-icon-transfer'}">
+                            ${cat ? cat.emoji : (isInc ? '↓' : '↑')}
+                          </div>
+                          <div class="txn-details">
+                            <h4>${txn.merchant || txn.description || 'عملية مالية'}</h4>
+                            <div class="txn-meta">
+                              <span>${cat ? cat.name : (isInc ? 'دخل' : 'تحويل')}</span>
+                              <span>·</span>
+                              <span>${acc ? acc.name : 'محفظة'}</span>
+                              <span>·</span>
+                              <span>${txn.date}</span>
+                            </div>
+                          </div>
                         </div>
-                        <div class="txn-details">
-                          <h4>${txn.merchant || txn.description || 'عملية مالية'}</h4>
-                          <div class="txn-meta">
-                            <span>${cat ? cat.name : (isInc ? 'دخل' : 'تحويل')}</span>
-                            <span>·</span>
-                            <span>${acc ? acc.name : 'محفظة'}</span>
-                            <span>·</span>
-                            <span>${txn.date}</span>
+                        <div class="txn-amount-box">
+                          <div class="txn-amount-text ${isExp ? 'txn-amount-expense' : isInc ? 'txn-amount-income' : 'txn-amount-transfer'}">
+                            <span class="num">${isInc ? '+' : isExp ? '-' : ''}${Number(txn.amount).toLocaleString('en-US')}</span>
+                            <span class="currency-symbol">ريال</span>
                           </div>
                         </div>
                       </div>
-                      <div class="txn-amount-box">
-                        <div class="txn-amount-text ${isExp ? 'txn-amount-expense' : isInc ? 'txn-amount-income' : 'txn-amount-transfer'}">
-                          <span class="num">${isInc ? '+' : isExp ? '-' : ''}${Number(txn.amount).toLocaleString('en-US')}</span>
-                          <span class="currency-symbol">ريال</span>
-                        </div>
-                      </div>
-                    </div>
-                  `;
-                }).join('')}
-              </div>
+                    `;
+                  }).join('')}
+                </div>
+              `}
             </div>
 
           </div>
