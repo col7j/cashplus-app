@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cashplus-finance-v12';
+const CACHE_NAME = 'cashplus-finance-v13';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -16,6 +16,7 @@ const ASSETS_TO_CACHE = [
   './js/engine/financialEngine.js',
   './js/engine/smsParser.js',
   './js/engine/insightsEngine.js',
+  './js/engine/bankLogos.js',
   './js/views/dashboardView.js',
   './js/views/transactionsView.js',
   './js/views/accountsView.js',

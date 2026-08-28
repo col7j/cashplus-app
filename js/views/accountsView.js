@@ -6,6 +6,7 @@
 import { db } from '../engine/db.js';
 import { FinancialEngine } from '../engine/financialEngine.js';
 import { Icons } from '../icons.js';
+import { BankRegistry } from '../engine/bankLogos.js';
 
 export class AccountsView {
   static render(container) {
@@ -20,14 +21,13 @@ export class AccountsView {
       (db.state.accounts || []).forEach(acc => {
         const bankId = acc.bankId || 'bank-custom';
         if (!bankGroups[bankId]) {
-          const bankRef = (db.state.banks || []).find(b => b.id === bankId) || {
-            id: bankId,
-            name: acc.customBankName || 'بنك مخصص',
-            color: acc.color || '#4F6DF5',
-            logo: '🏦'
-          };
+          const bankRef = BankRegistry.find(bankId);
           bankGroups[bankId] = {
-            info: bankRef,
+            info: {
+              ...bankRef,
+              name: acc.customBankName || bankRef.name,
+              color: acc.color || bankRef.color
+            },
             accounts: []
           };
         }
@@ -125,9 +125,7 @@ export class AccountsView {
                   <!-- Master Bank Header -->
                   <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-md); border-bottom: 1px solid var(--border-subtle); padding-bottom: 1.25rem; margin-bottom: 1.25rem;">
                     <div style="display: flex; align-items: center; gap: 12px;">
-                      <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: ${bank.color || '#4F6DF5'}22; border: 1px solid ${bank.color || '#4F6DF5'}44; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; font-weight: 800; color: ${bank.color || '#4F6DF5'};">
-                        ${bank.logo ? bank.logo.split(' ')[0] : '🏛️'}
-                      </div>
+                      ${BankRegistry.getLogoHtml(bank.id, 46)}
                       <div>
                         <div style="display: flex; align-items: center; gap: 8px;">
                           <h3 style="font-size: 1.2rem; font-weight: 800; margin: 0;">${bank.name}</h3>

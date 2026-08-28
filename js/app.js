@@ -7,6 +7,7 @@ import { FinancialEngine } from './engine/financialEngine.js';
 import { SMSParser } from './engine/smsParser.js';
 import { cloudAuth, generateAvatarUrl } from './engine/firebase.js';
 import { Icons } from './icons.js';
+import { BankRegistry } from './engine/bankLogos.js';
 
 import { DashboardView } from './views/dashboardView.js';
 import { TransactionsView } from './views/transactionsView.js';
@@ -1400,12 +1401,19 @@ class App {
 
         <div class="modal-body">
           
-          <!-- 1. Select Bank / Wallet -->
+          <!-- 1. Select Bank / Wallet with Live SVG Logo Preview -->
           <div class="form-group">
             <label class="form-label">اختر البنك أو المحفظة الرقمية:</label>
-            <select id="acc-bank-id" class="form-select" style="font-weight:700;">
-              ${banks.map(b => `<option value="${b.id}" ${b.id === selectedBankId ? 'selected' : ''}>${b.logo || '🏛️'} ${b.name}</option>`).join('')}
-            </select>
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+              <div id="modal-bank-logo-preview">
+                ${BankRegistry.getLogoHtml(selectedBankId, 48)}
+              </div>
+              <div style="flex: 1;">
+                <select id="acc-bank-id" class="form-select" style="font-weight:800; padding: 0.65rem;">
+                  ${banks.map(b => `<option value="${b.id}" ${b.id === selectedBankId ? 'selected' : ''}>${b.name}</option>`).join('')}
+                </select>
+              </div>
+            </div>
           </div>
 
           <!-- Custom Bank Name & Color (Shown if custom bank selected) -->
@@ -1500,11 +1508,17 @@ class App {
 
     modalBackdrop.classList.add('open');
 
-    // Dynamic bank selection logic
+    // Dynamic bank selection logic & live logo preview
     const bankSelect = modalContent.querySelector('#acc-bank-id');
     const customBankBox = modalContent.querySelector('#custom-bank-box');
+    const logoPreview = modalContent.querySelector('#modal-bank-logo-preview');
+    
     bankSelect?.addEventListener('change', () => {
-      if (bankSelect.value === 'bank-custom') {
+      const selectedId = bankSelect.value;
+      if (logoPreview) {
+        logoPreview.innerHTML = BankRegistry.getLogoHtml(selectedId, 48);
+      }
+      if (selectedId === 'bank-custom') {
         customBankBox.style.display = 'block';
       } else {
         customBankBox.style.display = 'none';
