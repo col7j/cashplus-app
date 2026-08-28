@@ -1,0 +1,26 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "firestore.rules",
+      ".gitignore",
+      "assets/fonts/thmanyahsans/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(woff2|woff|otf|ttf)",
+        "headers": [{ "key": "Cache-Control", "value": "max-age=31536000" }]
+      }
+    ]
+  }
+}

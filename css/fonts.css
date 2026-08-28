@@ -1,0 +1,74 @@
+/* ==========================================================================
+   CASH PLUS (كاش بلس) — خط ثمانية سانز
+   ThmanyahSans Arabic Variable Font
+   المصدر: assets/fonts/thmanyahsans/woff2/
+   ========================================================================== */
+
+/* Light — 300 */
+@font-face {
+  font-family: 'ThmanyahSans';
+  src: url('../assets/fonts/thmanyahsans/woff2/thmanyahsans-Light.woff2') format('woff2'),
+       url('../assets/fonts/thmanyahsans/otf/thmanyahsans-Light.otf')    format('opentype');
+  font-weight: 300;
+  font-style:  normal;
+  font-display: swap;
+}
+
+/* Regular — 400 */
+@font-face {
+  font-family: 'ThmanyahSans';
+  src: url('../assets/fonts/thmanyahsans/woff2/thmanyahsans-Regular.woff2') format('woff2'),
+       url('../assets/fonts/thmanyahsans/otf/thmanyahsans-Regular.otf')    format('opentype');
+  font-weight: 400;
+  font-style:  normal;
+  font-display: swap;
+}
+
+/* Medium — 500 */
+@font-face {
+  font-family: 'ThmanyahSans';
+  src: url('../assets/fonts/thmanyahsans/woff2/thmanyahsans-Medium.woff2') format('woff2'),
+       url('../assets/fonts/thmanyahsans/otf/thmanyahsans-Medium.otf')    format('opentype');
+  font-weight: 500;
+  font-style:  normal;
+  font-display: swap;
+}
+
+/* Bold — 700 */
+@font-face {
+  font-family: 'ThmanyahSans';
+  src: url('../assets/fonts/thmanyahsans/woff2/thmanyahsans-Bold.woff2') format('woff2'),
+       url('../assets/fonts/thmanyahsans/otf/thmanyahsans-Bold.otf')    format('opentype');
+  font-weight: 700;
+  font-style:  normal;
+  font-display: swap;
+}
+
+/* Black — 900 */
+@font-face {
+  font-family: 'ThmanyahSans';
+  src: url('../assets/fonts/thmanyahsans/woff2/thmanyahsans-Black.woff2') format('woff2'),
+       url('../assets/fonts/thmanyahsans/otf/thmanyahsans-Black.otf')    format('opentype');
+  font-weight: 900;
+  font-style:  normal;
+  font-display: swap;
+}
+
+/* ─── Aliases for weights not in font set ────────────────────────────────── */
+/* SemiBold (600) → mapped to Bold */
+@font-face {
+  font-family: 'ThmanyahSans';
+  src: url('../assets/fonts/thmanyahsans/woff2/thmanyahsans-Bold.woff2') format('woff2');
+  font-weight: 600;
+  font-style:  normal;
+  font-display: swap;
+}
+
+/* ExtraBold (800) → mapped to Black */
+@font-face {
+  font-family: 'ThmanyahSans';
+  src: url('../assets/fonts/thmanyahsans/woff2/thmanyahsans-Black.woff2') format('woff2');
+  font-weight: 800;
+  font-style:  normal;
+  font-display: swap;
+}

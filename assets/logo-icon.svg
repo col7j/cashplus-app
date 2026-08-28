@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#556CFF"/>
+      <stop offset="100%" stop-color="#3D53F5"/>
+    </linearGradient>
+  </defs>
+  <!-- Squircle Base -->
+  <rect width="512" height="512" rx="140" fill="url(#bgGrad)"/>
+  
+  <!-- White Plus Sign -->
+  <!-- Vertical Bar -->
+  <rect x="214" y="96" width="84" height="320" rx="4" fill="#FFFFFF"/>
+  <!-- Horizontal Bar -->
+  <rect x="96" y="214" width="320" height="84" rx="4" fill="#FFFFFF"/>
+  
+  <!-- Geometric Notch in Top-Right inner quadrant of the plus -->
+  <polygon points="256,214 298,214 298,256" fill="#4B61FA"/>
+</svg>

@@ -1,0 +1,26 @@
+{
+  "name": "كاش بلس | فلوسك تستاهل أكثر",
+  "short_name": "كاش بلس",
+  "description": "نظام التشغيل المالي الشخصي لإدارة وتتبع المصاريف والتدفقات النقدية",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0B0E17",
+  "theme_color": "#4B61FA",
+  "orientation": "portrait-primary",
+  "dir": "rtl",
+  "lang": "ar",
+  "icons": [
+    {
+      "src": "./assets/logo-icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./assets/logo-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

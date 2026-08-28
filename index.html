@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+  <title>كاش بلس | فلوسك تستاهل أكثر</title>
+  
+  <!-- PWA & Apple Meta Tags -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="assets/logo-icon.svg">
+  <link rel="apple-touch-icon" href="assets/logo-icon.png">
+  <meta name="theme-color" content="#0A0D15">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="كاش بلس">
+  <meta name="format-detection" content="telephone=no">
+
+  <!-- CSS Design System & Components -->
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/animations.css">
+</head>
+<body>
+
+  <!-- Ambient Lighting Effects -->
+  <div class="ambient-glow ambient-glow-1"></div>
+  <div class="ambient-glow ambient-glow-2"></div>
+
+  <!-- PWA Install Banner -->
+  <div id="pwa-install-banner" style="display: none; position: fixed; top: var(--sat); left: 0; right: 0; z-index: 99; background: #121623; border-bottom: 1px solid var(--border-default); color: white; padding: 0.65rem var(--space-md); align-items: center; justify-content: space-between; font-size: 0.8125rem; font-weight: 600; box-shadow: var(--shadow-md);">
+    <div style="display: flex; align-items: center; gap: var(--space-xs);">
+      <img src="assets/logo-icon.svg" style="width: 24px; height: 24px; border-radius: 6px;">
+      <span>ثبّت <strong>كاش بلس</strong> كتطبيق على هاتفك لإدارة مصاريفك أينما كنت!</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: var(--space-xs);">
+      <button id="pwa-btn-install" class="btn btn-primary btn-sm" style="padding: 3px 12px;">تثبيت</button>
+      <button id="pwa-btn-dismiss" style="background: none; border: none; color: var(--text-tertiary); cursor: pointer; font-size: 1.1rem; padding: 0 4px;">✕</button>
+    </div>
+  </div>
+
+  <div id="app-container">
+
+    <!-- DESKTOP SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="#dashboard" class="brand-wrapper">
+          <img src="assets/logo-icon.svg" alt="شعار كاش بلس" style="width: 38px; height: 38px; border-radius: 10px; box-shadow: 0 4px 12px rgba(75, 97, 250, 0.3);">
+          <div class="brand-text">
+            <h2>كاش بلس</h2>
+            <span style="color: var(--primary-text); font-weight: 500;">فلوسك تستاهل أكثر</span>
+          </div>
+        </a>
+      </div>
+
+      <!-- Navigation Menu (Clean & Typography First) -->
+      <nav class="nav-menu">
+        <div class="nav-section-title">نظرة عامة</div>
+        
+        <a href="#dashboard" class="nav-item active" data-view="dashboard">
+          <span class="nav-item-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+          </span>
+          <span>الرئيسية</span>
+        </a>
+
+        <a href="#transactions" class="nav-item" data-view="transactions">
+          <span class="nav-item-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/><path d="M17 14l-5-5-5 5"/><path d="M12 9v12"/></svg>
+          </span>
+          <span>سجل العمليات</span>
+        </a>
+
+        <a href="#accounts" class="nav-item" data-view="accounts">
+          <span class="nav-item-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 15h0"/><path d="M2 9.5h20"/></svg>
+          </span>
+          <span>الحسابات والخزينة</span>
+        </a>
+
+        <div class="nav-section-title">التخطيط والميزانية</div>
+
+        <a href="#budgets" class="nav-item" data-view="budgets">
+          <span class="nav-item-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+          </span>
+          <span>الميزانية الشهرية</span>
+        </a>
+
+        <a href="#savings" class="nav-item" data-view="savings">
+          <span class="nav-item-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          </span>
+          <span>صناديق الادخار</span>
+        </a>
+
+        <a href="#investments" class="nav-item" data-view="investments">
+          <span class="nav-item-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+          </span>
+          <span>المحافظ الاستثمارية</span>
+        </a>
+
+        <div class="nav-section-title">الالتزامات والرغبات</div>
+
+        <a href="#obligations" class="nav-item" data-view="obligations">
+          <span class="nav-item-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>
+          </span>
+          <span>الالتزامات الدورية</span>
+        </a>
+
+        <a href="#debts" class="nav-item" data-view="debts">
+          <span class="nav-item-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
+          </span>
+          <span>الديون والمستحقات</span>
+        </a>
+
+        <a href="#purchases" class="nav-item" data-view="purchases">
+          <span class="nav-item-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+          </span>
+          <span>المشتريات المخططة</span>
+        </a>
+
+        <div class="nav-section-title">الذكاء والسحابة</div>
+
+        <a href="#analytics" class="nav-item" data-view="analytics">
+          <span class="nav-item-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          </span>
+          <span>التحليلات ومسار التدفق</span>
+        </a>
+
+        <a href="#settings" class="nav-item" data-view="settings">
+          <span class="nav-item-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          </span>
+          <span>الإعدادات والسحابة</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div style="font-size: 0.75rem; color: var(--text-tertiary); text-align: center;">
+          كاش بلس v2.0 • فلوسك تستاهل أكثر
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN WRAPPER -->
+    <main class="main-wrapper">
+      
+      <!-- Top Header -->
+      <header class="app-header">
+        <div class="header-left-actions">
+          <button id="btn-mobile-menu" class="btn btn-glass btn-icon" style="display: none;" title="القائمة">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+          </button>
+          
+          <div class="page-title-area">
+            <h1 id="header-page-title">الرئيسية</h1>
+            <span id="header-page-subtitle">نظرة عامة على الوضع المالي والسيولة</span>
+          </div>
+        </div>
+
+        <div class="header-right-actions">
+          <!-- Cloud Sync Status Pill -->
+          <div class="cloud-sync-pill" id="header-cloud-status" title="تسجيل الدخول والمزامنة السحابية">
+            <span class="sync-dot synced"></span>
+            <span>حساب سحابي</span>
+          </div>
+
+          <button class="btn btn-glass btn-sm btn-global-paste-sms" title="لصق رسالة بنكية">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span class="hide-mobile">لصق رسالة بنك</span>
+          </button>
+
+          <button class="btn btn-primary btn-sm btn-global-quick-add" title="تسجيل عملية">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            <span class="hide-mobile">تسجيل عملية</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Content Container -->
+      <div class="page-content" id="main-view-container"></div>
+    </main>
+
+    <!-- MOBILE BOTTOM NAVIGATION -->
+    <nav class="mobile-bottom-nav">
+      <button class="mobile-nav-btn active" data-view="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        <span>الرئيسية</span>
+      </button>
+
+      <button class="mobile-nav-btn" data-view="transactions">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/><path d="M17 14l-5-5-5 5"/><path d="M12 9v12"/></svg>
+        <span>العمليات</span>
+      </button>
+
+      <!-- Center Action Button -->
+      <button class="mobile-quick-action-btn btn-global-quick-add" title="إضافة عملية" style="background: var(--primary);">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+      </button>
+
+      <button class="mobile-nav-btn" data-view="budgets">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+        <span>الميزانية</span>
+      </button>
+
+      <button class="mobile-nav-btn" data-view="accounts">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 15h0"/><path d="M2 9.5h20"/></svg>
+        <span>الخزينة</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <!-- Global Modal & Bottom Sheet Backdrop Container -->
+  <div id="global-modal-backdrop" class="modal-backdrop">
+    <div id="global-modal-content"></div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <style>
+    @media (max-width: 1024px) {
+      #btn-mobile-menu { display: flex !important; }
+      .hide-mobile { display: none !important; }
+    }
+  </style>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
