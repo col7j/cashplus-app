@@ -346,16 +346,24 @@ class CloudAuthManager {
       console.error('[CashPlus] Diagnostic check failed:', err);
       let reason = err.message;
       let fixGuide = '';
-      if (err.code === 'permission-denied' || err.message?.includes('permission')) {
+      let rulesUrl = 'https://console.firebase.google.com/project/cash-plus-90e0c/firestore/rules';
+
+      if (err.code === 'not-found' || err.message?.includes('does not exist') || err.message?.includes('NOT_FOUND') || err.message?.includes('404')) {
+        reason = 'قاعدة بيانات Firestore غير منشأة بعد في مشروعك cash-plus-90e0c على خوادم Google.';
+        fixGuide = 'اضغط على الرابط بالأسفل ثم اضغط زر "Create database" لاختيار الموقع وتفعيل قاعدة البيانات.';
+        rulesUrl = 'https://console.firebase.google.com/project/cash-plus-90e0c/firestore';
+      } else if (err.code === 'permission-denied' || err.message?.includes('permission')) {
         reason = 'تم رفض الصلاحية من خوادم Google (Permission Denied). قواعد الحماية في Firebase Console تمنع الكتابة.';
         fixGuide = 'افتح صفحة قواعد Firestore في Firebase Console وضع القاعدة allow read, write: if request.auth != null;';
+        rulesUrl = 'https://console.firebase.google.com/project/cash-plus-90e0c/firestore/rules';
       }
+
       return {
         success: false,
         error: err.code || 'write-error',
         message: reason,
         fixGuide: fixGuide,
-        rulesUrl: 'https://console.firebase.google.com/project/cash-plus-90e0c/firestore/rules'
+        rulesUrl: rulesUrl
       };
     }
   }
