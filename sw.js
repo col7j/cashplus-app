@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cashplus-finance-v2';
+const CACHE_NAME = 'cashplus-finance-v3';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -26,7 +26,8 @@ const ASSETS_TO_CACHE = [
   './js/views/debtsView.js',
   './js/views/purchasesView.js',
   './js/views/analyticsView.js',
-  './js/views/settingsView.js'
+  './js/views/settingsView.js',
+  './js/views/landingView.js'
 ];
 
 self.addEventListener('install', (event) => {

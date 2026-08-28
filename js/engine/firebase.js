@@ -167,24 +167,31 @@ class CloudAuthManager {
     }
   }
 
-  // ── Outbound Sync (Local → Cloud, throttled 1.5s) ────────────────────────
+  // ── Outbound Sync (Direct & Throttled) ──────────────────────────────────
+  async pushImmediate(state) {
+    if (!this.currentUser) return;
+    try {
+      await pushToFirestore(this.currentUser.uid, state);
+      this.syncStatus = 'synced';
+      this.notify();
+    } catch (err) {
+      console.error('[CashPlus] Firestore direct push error:', err);
+      this.syncStatus = 'error';
+      this.notify();
+    }
+  }
+
   triggerCloudSync() {
     if (!this.currentUser) return;
-
     this.syncStatus = 'syncing';
     this.notify();
 
     clearTimeout(this._syncThrottle);
     this._syncThrottle = setTimeout(async () => {
       await pushToFirestore(this.currentUser.uid, db.state);
-  async pushImmediate(state) {
-    if (!this.currentUser) return;
-    try {
-      await pushToFirestore(this.currentUser.uid, state);
       this.syncStatus = 'synced';
-    } catch (err) {
-      console.error('[CashPlus] Firestore direct push error:', err);
-    }
+      this.notify();
+    }, 1000);
   }
 
   // ── Public Auth Methods ──────────────────────────────────────────────────
