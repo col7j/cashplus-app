@@ -5,7 +5,7 @@
 import { db } from './engine/db.js';
 import { FinancialEngine } from './engine/financialEngine.js';
 import { SMSParser } from './engine/smsParser.js';
-import { cloudAuth } from './engine/firebase.js';
+import { cloudAuth, generateAvatarUrl } from './engine/firebase.js';
 import { Icons } from './icons.js';
 
 import { DashboardView } from './views/dashboardView.js';
@@ -277,8 +277,6 @@ class App {
         }
         this.deferredInstallPrompt = null;
       }
-    });
-
     document.getElementById('pwa-btn-dismiss')?.addEventListener('click', () => {
       document.getElementById('pwa-install-banner').style.display = 'none';
     });
@@ -292,13 +290,25 @@ class App {
     const modalContent  = document.getElementById('global-modal-content');
     if (!modalBackdrop || !modalContent) return;
 
-    let authMode   = defaultMode;
-    let selectedGender = 'none';
-    let isLoading  = false;
+    let authMode        = defaultMode;
+    let selectedGender  = 'male';
+    let selectedStyle   = 'notionists';
+    let selectedBgColor = 'b6e3f4';
+    let isLoading       = false;
 
     const renderAuth = () => {
+      const getPreviewUrl = () => {
+        const nameVal = modalContent.querySelector('#auth-name')?.value?.trim() || 'User';
+        return generateAvatarUrl({
+          style: selectedStyle === 'female' ? 'notionists' : selectedStyle,
+          gender: selectedStyle === 'female' ? 'female' : (selectedStyle === 'notionists' ? 'male' : 'none'),
+          seed: nameVal,
+          bgColor: selectedBgColor
+        });
+      };
+
       modalContent.innerHTML = `
-        <div class="modal-sheet animate-fade-in" style="max-width: 440px;">
+        <div class="modal-sheet animate-fade-in" style="max-width: 460px;">
           <div class="modal-header">
             <div style="display: flex; align-items: center; gap: 8px;">
               <span style="font-size: 1.25rem;">☁️</span>
@@ -308,7 +318,7 @@ class App {
           </div>
 
           <div class="modal-body">
-            <p style="font-size: 0.8125rem; color: var(--text-secondary); margin-bottom: var(--space-lg); text-align: center; line-height: 1.6;">
+            <p style="font-size: 0.8125rem; color: var(--text-secondary); margin-bottom: var(--space-md); text-align: center; line-height: 1.6;">
               ${authMode === 'login'
                 ? 'سجّل دخولك لمزامنة بياناتك المالية بين جميع أجهزتك فوراً.'
                 : 'أنشئ حساباً مجانياً لحفظ بياناتك المالية بأمان على السحابة.'}
@@ -339,12 +349,34 @@ class App {
                 <input type="text" id="auth-name" class="form-input" placeholder="اسمك الكامل" autocomplete="name" required>
               </div>
 
-              <div class="form-group">
-                <label class="form-label">الجنس / النوع (لتخصيص الأيقونة الشخصية):</label>
-                <div class="segmented-control" id="auth-gender-select" style="display: flex; width: 100%;">
-                  <button type="button" class="segmented-btn ${selectedGender === 'male' ? 'active' : ''}" data-gender="male" style="flex: 1;">👨 ذكر</button>
-                  <button type="button" class="segmented-btn ${selectedGender === 'female' ? 'active' : ''}" data-gender="female" style="flex: 1;">👩 أنثى</button>
-                  <button type="button" class="segmented-btn ${selectedGender === 'none' ? 'active' : ''}" data-gender="none" style="flex: 1;">🐧 غير محدد</button>
+              <!-- Live Interactive Avatar & Background Customizer -->
+              <div style="background: var(--bg-surface-secondary); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.1rem; margin-bottom: var(--space-md); text-align: center;">
+                <label class="form-label" style="text-align: center; margin-bottom: 8px; font-weight: 700;">تخصيص صورتك الشخصية ولون الخلفية:</label>
+                
+                <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 12px;">
+                  <img id="auth-avatar-preview-img" src="${getPreviewUrl()}" style="width: 76px; height: 76px; border-radius: 50%; border: 3px solid var(--primary); box-shadow: 0 4px 14px rgba(0,0,0,0.2); transition: transform 0.2s ease;">
+                </div>
+
+                <!-- Avatar Archetype Styles -->
+                <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-bottom: 6px; font-weight: 600;">اختر نمط الشخصية:</div>
+                <div class="segmented-control" id="auth-style-select" style="display: flex; width: 100%; margin-bottom: 12px; gap: 4px; overflow-x: auto; padding: 3px;">
+                  <button type="button" class="segmented-btn ${selectedStyle === 'notionists' ? 'active' : ''}" data-style="notionists" style="flex: 1; font-size: 0.75rem; padding: 4px 6px; white-space: nowrap;">👨 شباب</button>
+                  <button type="button" class="segmented-btn ${selectedStyle === 'female' ? 'active' : ''}" data-style="female" style="flex: 1; font-size: 0.75rem; padding: 4px 6px; white-space: nowrap;">👩 بنات</button>
+                  <button type="button" class="segmented-btn ${selectedStyle === 'bottts' ? 'active' : ''}" data-style="bottts" style="flex: 1; font-size: 0.75rem; padding: 4px 6px; white-space: nowrap;">🐧 بطريق</button>
+                  <button type="button" class="segmented-btn ${selectedStyle === 'micah' ? 'active' : ''}" data-style="micah" style="flex: 1; font-size: 0.75rem; padding: 4px 6px; white-space: nowrap;">👑 VIP</button>
+                  <button type="button" class="segmented-btn ${selectedStyle === 'adventurer' ? 'active' : ''}" data-style="adventurer" style="flex: 1; font-size: 0.75rem; padding: 4px 6px; white-space: nowrap;">⚔️ مغامر</button>
+                </div>
+
+                <!-- Avatar Background Colors Palette -->
+                <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-bottom: 6px; font-weight: 600;">اختر لون خلفية الصورة:</div>
+                <div id="auth-bg-palette" style="display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;">
+                  <button type="button" class="avatar-color-btn ${selectedBgColor === 'b6e3f4' ? 'active' : ''}" data-color="b6e3f4" title="أزرق كاش" style="width: 30px; height: 30px; border-radius: 50%; background: #b6e3f4; border: ${selectedBgColor === 'b6e3f4' ? '3px solid var(--primary)' : '2px solid transparent'}; cursor: pointer; transform: ${selectedBgColor === 'b6e3f4' ? 'scale(1.15)' : 'none'}; transition: all 0.2s;"></button>
+                  <button type="button" class="avatar-color-btn ${selectedBgColor === 'c0aede' ? 'active' : ''}" data-color="c0aede" title="بنفسجي ليلكي" style="width: 30px; height: 30px; border-radius: 50%; background: #c0aede; border: ${selectedBgColor === 'c0aede' ? '3px solid var(--primary)' : '2px solid transparent'}; cursor: pointer; transform: ${selectedBgColor === 'c0aede' ? 'scale(1.15)' : 'none'}; transition: all 0.2s;"></button>
+                  <button type="button" class="avatar-color-btn ${selectedBgColor === 'd1fae5' ? 'active' : ''}" data-color="d1fae5" title="زمردي منعش" style="width: 30px; height: 30px; border-radius: 50%; background: #d1fae5; border: ${selectedBgColor === 'd1fae5' ? '3px solid var(--primary)' : '2px solid transparent'}; cursor: pointer; transform: ${selectedBgColor === 'd1fae5' ? 'scale(1.15)' : 'none'}; transition: all 0.2s;"></button>
+                  <button type="button" class="avatar-color-btn ${selectedBgColor === 'fef3c7' ? 'active' : ''}" data-color="fef3c7" title="ذهبي كهرماني" style="width: 30px; height: 30px; border-radius: 50%; background: #fef3c7; border: ${selectedBgColor === 'fef3c7' ? '3px solid var(--primary)' : '2px solid transparent'}; cursor: pointer; transform: ${selectedBgColor === 'fef3c7' ? 'scale(1.15)' : 'none'}; transition: all 0.2s;"></button>
+                  <button type="button" class="avatar-color-btn ${selectedBgColor === 'ffd5dc' ? 'active' : ''}" data-color="ffd5dc" title="وردي ناعم" style="width: 30px; height: 30px; border-radius: 50%; background: #ffd5dc; border: ${selectedBgColor === 'ffd5dc' ? '3px solid var(--primary)' : '2px solid transparent'}; cursor: pointer; transform: ${selectedBgColor === 'ffd5dc' ? 'scale(1.15)' : 'none'}; transition: all 0.2s;"></button>
+                  <button type="button" class="avatar-color-btn ${selectedBgColor === 'ffdfbf' ? 'active' : ''}" data-color="ffdfbf" title="مشمشي دافئ" style="width: 30px; height: 30px; border-radius: 50%; background: #ffdfbf; border: ${selectedBgColor === 'ffdfbf' ? '3px solid var(--primary)' : '2px solid transparent'}; cursor: pointer; transform: ${selectedBgColor === 'ffdfbf' ? 'scale(1.15)' : 'none'}; transition: all 0.2s;"></button>
+                  <button type="button" class="avatar-color-btn ${selectedBgColor === '334155' ? 'active' : ''}" data-color="334155" title="كربوني داكن" style="width: 30px; height: 30px; border-radius: 50%; background: #334155; border: ${selectedBgColor === '334155' ? '3px solid var(--primary)' : '2px solid transparent'}; cursor: pointer; transform: ${selectedBgColor === '334155' ? 'scale(1.15)' : 'none'}; transition: all 0.2s;"></button>
                 </div>
               </div>
             ` : ''}
@@ -396,22 +428,45 @@ class App {
         </div>
       `;
 
+      const updatePreview = () => {
+        const previewImg = modalContent.querySelector('#auth-avatar-preview-img');
+        if (previewImg) previewImg.src = getPreviewUrl();
+      };
+
+      // Name input listener for live avatar update
+      modalContent.querySelector('#auth-name')?.addEventListener('input', updatePreview);
+
+      // Style selection buttons
+      modalContent.querySelectorAll('#auth-style-select .segmented-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          modalContent.querySelectorAll('#auth-style-select .segmented-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          selectedStyle = btn.getAttribute('data-style');
+          selectedGender = selectedStyle === 'female' ? 'female' : (selectedStyle === 'notionists' ? 'male' : 'none');
+          updatePreview();
+        });
+      });
+
+      // Background color palette buttons
+      modalContent.querySelectorAll('#auth-bg-palette .avatar-color-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          modalContent.querySelectorAll('#auth-bg-palette .avatar-color-btn').forEach(b => {
+            b.style.border = '2px solid transparent';
+            b.style.transform = 'none';
+            b.classList.remove('active');
+          });
+          btn.classList.add('active');
+          btn.style.border = '3px solid var(--primary)';
+          btn.style.transform = 'scale(1.15)';
+          selectedBgColor = btn.getAttribute('data-color');
+          updatePreview();
+        });
+      });
+
       const showError = (msg) => {
         const errBox = modalContent.querySelector('#auth-error-box');
         if (!errBox) return;
-        if (msg.includes('configuration-not-found') || msg.includes('Configuration')) {
-          errBox.innerHTML = `
-            ⚠️ Firebase Authentication غير مفعّل بعد.<br>
-            <a href="https://console.firebase.google.com/project/cash-plus-90e0c/authentication/providers"
-               target="_blank"
-               style="color:var(--primary);font-weight:700;">
-              اضغط هنا لتفعيله في Firebase Console
-            </a>
-            <br><small style="color:var(--text-tertiary);">فعّل Email/Password وGoogle ثم أعد المحاولة</small>
-          `;
-        } else {
-          errBox.textContent = msg;
-        }
+        errBox.textContent = msg;
         errBox.style.display = 'block';
       };
 
@@ -425,15 +480,6 @@ class App {
           ? '⏳ جارٍ المعالجة...'
           : (authMode === 'login' ? 'تسجيل الدخول' : 'إنشاء الحساب');
       };
-
-      // Gender selection buttons
-      modalContent.querySelectorAll('#auth-gender-select .segmented-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          modalContent.querySelectorAll('#auth-gender-select .segmented-btn').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          selectedGender = btn.getAttribute('data-gender');
-        });
-      });
 
       // Google sign-in
       modalContent.querySelector('#btn-auth-google')?.addEventListener('click', async () => {
@@ -470,7 +516,7 @@ class App {
         setLoading(true);
         try {
           if (authMode === 'signup') {
-            await cloudAuth.signUpWithEmail(email, password, name, selectedGender);
+            await cloudAuth.signUpWithEmail(email, password, name, selectedGender, selectedBgColor, selectedStyle);
             this.showToast(`أهلاً بك يا ${name}! تم إنشاء حسابك بنجاح 🎉`);
           } else {
             await cloudAuth.signInWithEmail(email, password);
@@ -498,7 +544,6 @@ class App {
 
       this.bindModalCloseEvents(modalContent, modalBackdrop);
 
-      // Focus input field
       setTimeout(() => {
         const firstInput = modalContent.querySelector('#auth-name') || modalContent.querySelector('#auth-email');
         firstInput?.focus();
@@ -648,7 +693,7 @@ class App {
     this.bindModalCloseEvents(modalContent, modalBackdrop);
   }
 
-  // 0.1 Profile & Cloud Status Modal (When User Is Already Logged In)
+  // 0.1 Profile & Cloud Status Modal (Interactive Avatar & Background Customizer)
   openProfileModal() {
     const modalBackdrop = document.getElementById('global-modal-backdrop');
     const modalContent  = document.getElementById('global-modal-content');
@@ -660,42 +705,80 @@ class App {
       return;
     }
 
+    const currentProfile = db.state.settings.userProfile || {};
+    let selectedStyle    = currentProfile.avatarStyle || 'notionists';
+    let selectedBgColor  = currentProfile.avatarBgColor || 'b6e3f4';
+    let selectedGender   = currentProfile.gender || 'male';
+
+    const getPreviewUrl = () => {
+      const nameVal = modalContent.querySelector('#profile-edit-name')?.value?.trim() || user.displayName || user.email;
+      return generateAvatarUrl({
+        style: selectedStyle === 'female' ? 'notionists' : selectedStyle,
+        gender: selectedStyle === 'female' ? 'female' : (selectedStyle === 'notionists' ? 'male' : 'none'),
+        seed: nameVal,
+        bgColor: selectedBgColor
+      });
+    };
+
     modalContent.innerHTML = `
-      <div class="modal-sheet animate-fade-in" style="max-width: 440px;">
+      <div class="modal-sheet animate-fade-in" style="max-width: 460px;">
         <div class="modal-header">
           <div style="display:flex;align-items:center;gap:var(--space-xs);">
             <span style="font-size:1.25rem;">👤</span>
-            <h3>الحساب السحابي المتصل</h3>
+            <h3>الملف الشخصي والحساب السحابي</h3>
           </div>
           <button class="btn btn-glass btn-icon btn-sm" id="modal-close-btn">${Icons.close}</button>
         </div>
 
         <div class="modal-body" style="text-align: center;">
-          <div style="width: 72px; height: 72px; border-radius: 50%; margin: 0 auto var(--space-md) auto; overflow: hidden; border: 3px solid var(--success); box-shadow: var(--shadow-md);">
-            <img src="${user.photoURL}" style="width:100%;height:100%;object-fit:cover;">
+          
+          <!-- Avatar Preview -->
+          <div style="display: flex; justify-content: center; align-items: center; margin-bottom: var(--space-sm);">
+            <img id="profile-modal-avatar-img" src="${user.photoURL || getPreviewUrl()}" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--primary); box-shadow: var(--shadow-md); transition: transform 0.2s;">
           </div>
           
-          <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 4px;">${user.displayName}</h3>
-          <p style="font-size: 0.8125rem; color: var(--text-tertiary); margin-bottom: var(--space-md);">${user.email}</p>
+          <div class="form-group" style="text-align: right; margin-bottom: var(--space-sm);">
+            <label class="form-label">الاسم المعروض:</label>
+            <input type="text" id="profile-edit-name" class="form-input" value="${user.displayName || ''}" placeholder="اسمك">
+          </div>
 
-          <div style="background: var(--success-surface); border: 1px solid var(--success-border); padding: var(--space-sm) var(--space-md); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-lg);">
+          <!-- Customizer Container -->
+          <div style="background: var(--bg-surface-secondary); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 0.9rem; margin-bottom: var(--space-md); text-align: center;">
+            <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-bottom: 6px; font-weight: 700;">تغيير نمط الشخصية:</div>
+            <div class="segmented-control" id="profile-style-select" style="display: flex; width: 100%; margin-bottom: 10px; gap: 4px; overflow-x: auto; padding: 3px;">
+              <button type="button" class="segmented-btn ${selectedStyle === 'notionists' ? 'active' : ''}" data-style="notionists" style="flex: 1; font-size: 0.75rem; padding: 4px 6px; white-space: nowrap;">👨 شباب</button>
+              <button type="button" class="segmented-btn ${selectedStyle === 'female' ? 'active' : ''}" data-style="female" style="flex: 1; font-size: 0.75rem; padding: 4px 6px; white-space: nowrap;">👩 بنات</button>
+              <button type="button" class="segmented-btn ${selectedStyle === 'bottts' ? 'active' : ''}" data-style="bottts" style="flex: 1; font-size: 0.75rem; padding: 4px 6px; white-space: nowrap;">🐧 بطريق</button>
+              <button type="button" class="segmented-btn ${selectedStyle === 'micah' ? 'active' : ''}" data-style="micah" style="flex: 1; font-size: 0.75rem; padding: 4px 6px; white-space: nowrap;">👑 VIP</button>
+              <button type="button" class="segmented-btn ${selectedStyle === 'adventurer' ? 'active' : ''}" data-style="adventurer" style="flex: 1; font-size: 0.75rem; padding: 4px 6px; white-space: nowrap;">⚔️ مغامر</button>
+            </div>
+
+            <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-bottom: 6px; font-weight: 700;">تغيير لون خلفية الصورة:</div>
+            <div id="profile-bg-palette" style="display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;">
+              <button type="button" class="avatar-color-btn ${selectedBgColor === 'b6e3f4' ? 'active' : ''}" data-color="b6e3f4" title="أزرق كاش" style="width: 28px; height: 28px; border-radius: 50%; background: #b6e3f4; border: ${selectedBgColor === 'b6e3f4' ? '3px solid var(--primary)' : '2px solid transparent'}; cursor: pointer;"></button>
+              <button type="button" class="avatar-color-btn ${selectedBgColor === 'c0aede' ? 'active' : ''}" data-color="c0aede" title="بنفسجي ليلكي" style="width: 28px; height: 28px; border-radius: 50%; background: #c0aede; border: ${selectedBgColor === 'c0aede' ? '3px solid var(--primary)' : '2px solid transparent'}; cursor: pointer;"></button>
+              <button type="button" class="avatar-color-btn ${selectedBgColor === 'd1fae5' ? 'active' : ''}" data-color="d1fae5" title="زمردي منعش" style="width: 28px; height: 28px; border-radius: 50%; background: #d1fae5; border: ${selectedBgColor === 'd1fae5' ? '3px solid var(--primary)' : '2px solid transparent'}; cursor: pointer;"></button>
+              <button type="button" class="avatar-color-btn ${selectedBgColor === 'fef3c7' ? 'active' : ''}" data-color="fef3c7" title="ذهبي كهرماني" style="width: 28px; height: 28px; border-radius: 50%; background: #fef3c7; border: ${selectedBgColor === 'fef3c7' ? '3px solid var(--primary)' : '2px solid transparent'}; cursor: pointer;"></button>
+              <button type="button" class="avatar-color-btn ${selectedBgColor === 'ffd5dc' ? 'active' : ''}" data-color="ffd5dc" title="وردي ناعم" style="width: 28px; height: 28px; border-radius: 50%; background: #ffd5dc; border: ${selectedBgColor === 'ffd5dc' ? '3px solid var(--primary)' : '2px solid transparent'}; cursor: pointer;"></button>
+              <button type="button" class="avatar-color-btn ${selectedBgColor === 'ffdfbf' ? 'active' : ''}" data-color="ffdfbf" title="مشمشي دافئ" style="width: 28px; height: 28px; border-radius: 50%; background: #ffdfbf; border: ${selectedBgColor === 'ffdfbf' ? '3px solid var(--primary)' : '2px solid transparent'}; cursor: pointer;"></button>
+              <button type="button" class="avatar-color-btn ${selectedBgColor === '334155' ? 'active' : ''}" data-color="334155" title="كربوني داكن" style="width: 28px; height: 28px; border-radius: 50%; background: #334155; border: ${selectedBgColor === '334155' ? '3px solid var(--primary)' : '2px solid transparent'}; cursor: pointer;"></button>
+            </div>
+          </div>
+
+          <div style="background: var(--success-surface); border: 1px solid var(--success-border); padding: 0.6rem var(--space-md); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-md);">
             <div style="display:flex;align-items:center;gap:6px;">
               <span class="sync-dot synced"></span>
-              <span style="font-size: 0.8125rem; font-weight: 600; color: var(--success-text);">قاعدة بيانات Firestore نشطة</span>
+              <span style="font-size: 0.8125rem; font-weight: 600; color: var(--success-text);">قاعدة بيانات Firestore نشطة ومزامنة</span>
             </div>
             <span class="badge badge-success">متزامن ☁️</span>
           </div>
 
-          <p style="font-size: 0.75rem; color: var(--text-tertiary); margin-bottom: var(--space-lg); line-height: 1.5;">
-            🔒 بياناتك المالية مشفرة ومحفوظة على سحابة Google Firebase. عند تسجيل الخروج، تُمسح البيانات من هذا الجهاز للحفاظ على خصوصيتك.
-          </p>
-
           <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
-            <button class="btn btn-glass" id="btn-modal-logout" style="width: 100%; color: var(--danger-text); border-color: var(--danger-border); padding: 0.75rem;">
-              تسجيل الخروج من هذا الجهاز
+            <button class="btn btn-primary" id="btn-save-profile-customs" style="width: 100%; padding: 0.75rem; font-weight: 800;">
+              💾 حفظ وتحديث الصورة والبيانات
             </button>
-            <button class="btn btn-subtle" id="modal-cancel-btn" style="width: 100%;">
-              إغلاق
+            <button class="btn btn-glass" id="btn-modal-logout" style="width: 100%; color: var(--danger-text); border-color: var(--danger-border); padding: 0.65rem;">
+              تسجيل الخروج من هذا الجهاز
             </button>
           </div>
         </div>
@@ -703,6 +786,60 @@ class App {
     `;
 
     modalBackdrop.classList.add('open');
+
+    const updatePreview = () => {
+      const previewImg = modalContent.querySelector('#profile-modal-avatar-img');
+      if (previewImg) previewImg.src = getPreviewUrl();
+    };
+
+    modalContent.querySelector('#profile-edit-name')?.addEventListener('input', updatePreview);
+
+    modalContent.querySelectorAll('#profile-style-select .segmented-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        modalContent.querySelectorAll('#profile-style-select .segmented-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedStyle = btn.getAttribute('data-style');
+        selectedGender = selectedStyle === 'female' ? 'female' : (selectedStyle === 'notionists' ? 'male' : 'none');
+        updatePreview();
+      });
+    });
+
+    modalContent.querySelectorAll('#profile-bg-palette .avatar-color-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        modalContent.querySelectorAll('#profile-bg-palette .avatar-color-btn').forEach(b => {
+          b.style.border = '2px solid transparent';
+          b.classList.remove('active');
+        });
+        btn.classList.add('active');
+        btn.style.border = '3px solid var(--primary)';
+        selectedBgColor = btn.getAttribute('data-color');
+        updatePreview();
+      });
+    });
+
+    modalContent.querySelector('#btn-save-profile-customs')?.addEventListener('click', async () => {
+      const newName = modalContent.querySelector('#profile-edit-name')?.value?.trim() || user.displayName;
+      const newPhoto = getPreviewUrl();
+      const saveBtn = modalContent.querySelector('#btn-save-profile-customs');
+      if (saveBtn) saveBtn.disabled = true;
+
+      try {
+        await cloudAuth.updateUserProfile({
+          displayName: newName,
+          photoURL: newPhoto,
+          gender: selectedGender,
+          avatarBgColor: selectedBgColor,
+          avatarStyle: selectedStyle
+        });
+        this.updateHeaderAuthStatus();
+        this.showToast('تم تحديث الصورة الشخصية والاسم سحابياً بنجاح! ✨');
+        this.closeModal();
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        if (saveBtn) saveBtn.disabled = false;
+      }
+    });
 
     modalContent.querySelector('#btn-modal-logout')?.addEventListener('click', async () => {
       await cloudAuth.signOut();

@@ -270,21 +270,35 @@ class CloudAuthManager {
     }
   }
 
-  async signUpWithEmail(email, password, displayName, gender = 'none') {
+export function generateAvatarUrl({ style = 'notionists', seed = 'User', bgColor = 'b6e3f4', gender = 'male' }) {
+  const cleanSeed = encodeURIComponent(seed || 'User');
+  if (style === 'bottts') {
+    return `https://api.dicebear.com/7.x/bottts/svg?seed=Penguin_${cleanSeed}&backgroundColor=${bgColor}`;
+  } else if (style === 'adventurer') {
+    return `https://api.dicebear.com/7.x/adventurer/svg?seed=${cleanSeed}&backgroundColor=${bgColor}`;
+  } else if (style === 'micah') {
+    return `https://api.dicebear.com/7.x/micah/svg?seed=${cleanSeed}&backgroundColor=${bgColor}`;
+  } else if (style === 'lorelei') {
+    return `https://api.dicebear.com/7.x/lorelei/svg?seed=${cleanSeed}&backgroundColor=${bgColor}`;
+  } else {
+    // notionists
+    const prefix = gender === 'female' ? 'Aneka_' : (gender === 'male' ? 'Felix_' : 'Alex_');
+    return `https://api.dicebear.com/7.x/notionists/svg?seed=${prefix}${cleanSeed}&backgroundColor=${bgColor}`;
+  }
+}
+
+  async signUpWithEmail(email, password, displayName, gender = 'male', bgColor = 'b6e3f4', avatarStyle = 'notionists', customPhotoURL = null) {
     this.syncStatus = 'syncing';
     this.notify();
     try {
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       
-      let photoURL = '';
-      if (gender === 'male') {
-        photoURL = `https://api.dicebear.com/7.x/notionists/svg?seed=Felix_${encodeURIComponent(displayName || email)}&backgroundColor=b6e3f4`;
-      } else if (gender === 'female') {
-        photoURL = `https://api.dicebear.com/7.x/notionists/svg?seed=Aneka_${encodeURIComponent(displayName || email)}&backgroundColor=ffdfbf`;
-      } else {
-        // Default Penguin avatar
-        photoURL = `https://api.dicebear.com/7.x/bottts/svg?seed=Penguin_${encodeURIComponent(displayName || email)}&backgroundColor=c0aede`;
-      }
+      const photoURL = customPhotoURL || generateAvatarUrl({
+        style: avatarStyle,
+        seed: displayName || email,
+        bgColor: bgColor,
+        gender: gender
+      });
 
       await updateProfile(cred.user, {
         displayName: displayName || email.split('@')[0],
@@ -295,12 +309,49 @@ class CloudAuthManager {
       db.state.settings.userProfile = {
         name: displayName || email.split('@')[0],
         gender: gender,
+        avatarBgColor: bgColor,
+        avatarStyle: avatarStyle,
+        photoURL: photoURL,
         role: ''
       };
       await pushToFirestore(cred.user.uid, db.state);
     } catch (err) {
       this.syncStatus = this.currentUser ? 'synced' : 'offline';
       this.notify();
+      throw this._humanizeError(err);
+    }
+  }
+
+  async updateUserProfile({ displayName, photoURL, gender, avatarBgColor, avatarStyle }) {
+    if (!auth.currentUser) return;
+    try {
+      const newPhoto = photoURL || (auth.currentUser.photoURL);
+      const newName = displayName || auth.currentUser.displayName;
+      
+      await updateProfile(auth.currentUser, {
+        displayName: newName,
+        photoURL: newPhoto
+      });
+
+      if (this.currentUser) {
+        this.currentUser.displayName = newName;
+        this.currentUser.photoURL = newPhoto;
+      }
+
+      db.state.settings.userProfile = {
+        ...db.state.settings.userProfile,
+        name: newName,
+        gender: gender || db.state.settings.userProfile?.gender || 'male',
+        avatarBgColor: avatarBgColor || db.state.settings.userProfile?.avatarBgColor || 'b6e3f4',
+        avatarStyle: avatarStyle || db.state.settings.userProfile?.avatarStyle || 'notionists',
+        photoURL: newPhoto
+      };
+      db.save();
+      await pushToFirestore(auth.currentUser.uid, db.state);
+      this.notify();
+      return true;
+    } catch (err) {
+      console.error('Update profile error:', err);
       throw this._humanizeError(err);
     }
   }

@@ -102,7 +102,10 @@ export class SettingsView {
                   <input type="text" id="set-profile-role" class="form-input"
                     placeholder="مثال: موظف، مستقل، رائد أعمال..." value="${profile.role || ''}">
                 </div>
-                <button class="btn btn-primary btn-sm" id="btn-save-profile">حفظ الملف الشخصي والمزامنة</button>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <button class="btn btn-primary btn-sm" id="btn-save-profile" style="flex: 1;">حفظ الملف الشخصي والمزامنة</button>
+                  <button class="btn btn-glass btn-sm" id="btn-open-avatar-editor" style="flex: 1;">🎨 تخصيص صورتك وخلفيتها</button>
+                </div>
               </div>
 
               <!-- Categories Management Card -->
@@ -276,6 +279,11 @@ export class SettingsView {
         db.save();
         cloudAuth.triggerCloudSync();
         window.app.showToast('تم حفظ وتحديث الملف الشخصي سحابياً ✓');
+      });
+
+      // Open avatar editor modal
+      container.querySelector('#btn-open-avatar-editor')?.addEventListener('click', () => {
+        window.app.openProfileModal();
       });
 
       // Manage Categories
